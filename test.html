@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P5.js Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+        }
+    </style>
+    <script>
+        function setup() {
+            createCanvas(400, 400);
+            console.log("P5.js is working! Canvas created.");
+        }
+        
+        function draw() {
+            background(0);
+            fill(255);
+            textSize(24);
+            textAlign(CENTER, CENTER);
+            text("P5.js is working!", width/2, height/2 - 20);
+            
+            // Simple animation to prove it's running
+            fill(255, 255, 0);
+            ellipse(width/2, height/2 + 50, 50 + 20 * sin(frameCount * 0.05), 50 + 20 * sin(frameCount * 0.05));
+        }
+    </script>
+</head>
+<body>
+    <!-- P5.js will create the canvas here -->
+</body>
+</html> 
