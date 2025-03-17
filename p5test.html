@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>p5.js Test</title>
+    <!-- Load p5.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        a {
+            position: fixed;
+            bottom: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <a href="test.html">Back to Test Page</a>
+    
+    <script>
+        // Simple p5.js sketch
+        function setup() {
+            createCanvas(400, 400);
+            console.log("p5.js setup function is running!");
+        }
+        
+        function draw() {
+            background(50);
+            
+            // Draw a bouncing ball
+            fill(255, 100, 100);
+            ellipse(width/2, height/2 + 100 * sin(frameCount * 0.05), 50, 50);
+            
+            // Draw text
+            fill(255);
+            textSize(24);
+            textAlign(CENTER, CENTER);
+            text("p5.js is working!", width/2, height/4);
+            
+            // Draw frameCount
+            textSize(16);
+            text("Frame: " + frameCount, width/2, height/2);
+        }
+    </script>
+</body>
+</html> 
