@@ -10,8 +10,31 @@
     <!-- Supabase JS library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Game script -->
-    <script src="sketch.js"></script>
+    <!-- Game script with error handling -->
+    <script>
+        // Error handling wrapper for the main script
+        window.addEventListener('DOMContentLoaded', function() {
+            // Create a script element for our game
+            var scriptElement = document.createElement('script');
+            scriptElement.src = 'sketch.js';
+            
+            // Add error handling
+            scriptElement.onerror = function() {
+                console.error('Failed to load sketch.js');
+                document.getElementById('loading-message').style.display = 'block';
+                document.getElementById('loading-error').style.display = 'block';
+            };
+            
+            // Add success handling
+            scriptElement.onload = function() {
+                console.log('Successfully loaded sketch.js');
+                document.getElementById('loading-message').style.display = 'none';
+            };
+            
+            // Append the script to the document
+            document.body.appendChild(scriptElement);
+        });
+    </script>
     
     <style>
         html, body {
@@ -35,11 +58,71 @@
             text-align: center;
             width: 100%;
         }
+        #loading-message {
+            display: block;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            max-width: 600px;
+            padding: 20px;
+        }
+        #loading-error {
+            display: none;
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .fallback-buttons {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .fallback-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
+    <div id="loading-message">
+        <h1>HR API Game</h1>
+        <p>Loading game content...</p>
+        
+        <div id="loading-error">
+            <p>There was an error loading the game. This might be due to GitHub Pages not properly serving the sketch.js file.</p>
+            <div class="fallback-buttons">
+                <a href="minimal_game.html" class="fallback-button">Try Minimal Version</a>
+                <a href="test.html" class="fallback-button">Run Diagnostics</a>
+                <a href="p5test.html" class="fallback-button">Test p5.js</a>
+            </div>
+        </div>
+    </div>
+    
     <div id="instructions">
         Use ←/→ arrow keys to move and SPACE to shoot
     </div>
+    
+    <script>
+        // Check if page is loaded correctly after 5 seconds
+        setTimeout(function() {
+            // If p5 canvas wasn't created, show error
+            if (!document.querySelector('canvas')) {
+                document.getElementById('loading-error').style.display = 'block';
+            }
+        }, 5000);
+    </script>
 </body>
 </html>

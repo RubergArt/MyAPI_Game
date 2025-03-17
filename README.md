@@ -1,29 +1,43 @@
-# HR API Space Game
+# MyAPI Game
 
-A simple space shooter game where you need to match HR use cases with the correct API.
+A fun, interactive game about Payroll & HR APIs built with p5.js.
 
-## How to Run
+## Quick Access
 
-1. Open the `index.html` file in a modern web browser.
-   - You can double-click the file to open it locally
-   - Or use a local server for better performance
+- **Play the Game**: [GitHub Pages Link](https://rubergart.github.io/MyAPI_Game/)
+- **Minimal Version**: Use the `minimal_game.html` file for a simplified version of the game
 
-## How to Play
+## Controls
+- Use **Left/Right Arrow Keys** to move
+- Use **Spacebar** to shoot
+- Press **W** to skip directly to the win screen (for testing)
+- Press **Enter** to start the game and navigate between screens
 
-- **Objective**: Shoot the correct API that matches the HR use case shown at the top of the screen.
-- **Controls**:
-  - Move the spaceship left and right with the arrow keys
-  - Shoot bullets with the spacebar
-- **Rules**:
-  - Hit the API that correctly solves the current HR use case to advance to the next level
-  - Avoid hitting the red asteroids or you'll lose the game
-  - Win by completing all levels
+## Troubleshooting
 
-## Game Elements
+If you're experiencing issues with the game on GitHub Pages:
 
-- Gray rectangle: Your spaceship
-- Blue rectangles: APIs (with their names)
-- Red rectangles: Asteroids (obstacles)
-- White bullets: Shots from your spaceship
+1. Try the minimal version from your local computer
+2. Create a GitHub Gist with the content of minimal_game.html 
+3. Check browser console for any errors
+4. Ensure all JavaScript resources are loading properly
 
-Have fun learning about HR APIs! 
+## Setup with GitHub Pages
+
+To host this game on GitHub Pages:
+
+1. Clone the repository
+2. Create a GitHub repository
+3. Push the code to GitHub
+4. Go to repository Settings > Pages
+5. Select the main branch as the source
+
+## Development
+
+The game uses:
+- p5.js for canvas rendering
+- Supabase for storing email addresses (optional)
+
+## Credits
+
+Created by RubergArt 
