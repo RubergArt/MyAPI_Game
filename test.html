@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Page</title>
+    <script src="test.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,11 +35,34 @@
         a:hover {
             text-decoration: underline;
         }
+        .test-links {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .test-links a {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <h1>GitHub Pages Test</h1>
     <p>If you can see this page, GitHub Pages is working correctly for static HTML files.</p>
-    <a href="index.html">Go back to the game</a>
+    
+    <div class="test-links">
+        <a href="index.html">Go to the game</a>
+        <a href="https://rubergart.github.io/MyAPI_Game/sketch.js" target="_blank">View sketch.js file</a>
+    </div>
+    
+    <div id="js-status" style="margin-top: 20px; padding: 10px; background-color: #f44336; color: white; border-radius: 5px;">
+        JavaScript status: If you see this message, JavaScript is NOT running properly.
+    </div>
+    
+    <script>
+        // This will run if inline JavaScript works
+        document.getElementById('js-status').style.backgroundColor = '#4CAF50';
+        document.getElementById('js-status').textContent = 'JavaScript status: Inline JavaScript is working!';
+    </script>
 </body>
 </html> 
