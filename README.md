@@ -1,26 +1,46 @@
-# MyAPI Game
+# HR API Game
 
-A fun, interactive game about Payroll & HR APIs built with p5.js.
+A simple game built with p5.js that demonstrates API interactions.
 
-## Quick Access
+## Live Demo
 
-- **Play the Game**: [GitHub Pages Link](https://rubergart.github.io/MyAPI_Game/)
-- **Minimal Version**: Use the `minimal_game.html` file for a simplified version of the game
+You can play the game directly via GitHub Pages:
 
-## Controls
-- Use **Left/Right Arrow Keys** to move
-- Use **Spacebar** to shoot
-- Press **W** to skip directly to the win screen (for testing)
-- Press **Enter** to start the game and navigate between screens
+- Main game: https://rubergart.github.io/MyAPI_Game/
+- Minimal version: https://rubergart.github.io/MyAPI_Game/minimal_game.html
+
+## Game Controls
+
+- Use ←/→ arrow keys to move
+- SPACE to shoot
+- Press W for an instant win (cheat code for testing)
+
+## Structure
+
+This repository contains:
+
+- `index.html` - Main game with simplified implementation
+- `minimal_game.html` - Simplified version for testing
+- `sketch.js` - Full game implementation (may have path issues on GitHub Pages)
+- Various test files for debugging
+
+## GitHub Pages Notes
+
+The game is hosted on GitHub Pages at the URL pattern:
+`https://rubergart.github.io/MyAPI_Game/`
+
+If you encounter any issues accessing the game, try using the minimal version which has all code embedded in the HTML file.
+
+## Local Development
+
+To run the game locally, simply open any of the HTML files in a web browser.
 
 ## Troubleshooting
 
-If you're experiencing issues with the game on GitHub Pages:
-
-1. Try the minimal version from your local computer
-2. Create a GitHub Gist with the content of minimal_game.html 
-3. Check browser console for any errors
-4. Ensure all JavaScript resources are loading properly
+If you see only a blank page with a header:
+1. Try the minimal version at `/minimal_game.html`
+2. Check browser console for any errors
+3. Ensure the p5.js library is loading correctly
 
 ## Setup with GitHub Pages
 

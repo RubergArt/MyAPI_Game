@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimal HR API Game</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         html, body {
@@ -17,6 +16,7 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
         canvas {
             display: block;
@@ -25,13 +25,20 @@
             position: fixed;
             bottom: 20px;
             color: white;
-            font-family: Arial, sans-serif;
+            text-align: center;
+            width: 100%;
+        }
+        #status {
+            position: fixed;
+            top: 20px;
+            color: white;
             text-align: center;
             width: 100%;
         }
     </style>
 </head>
 <body>
+    <div id="status">Minimal Version - GitHub Pages Test</div>
     <div id="instructions">
         Use ←/→ arrow keys to move and SPACE to shoot
     </div>
@@ -41,10 +48,31 @@
         let gameState = "splash"; // splash, playing, won, lost
         let canvasWidth = 800;
         let canvasHeight = 600;
+        let playerX;
+        let score = 0;
+        let targets = [];
         
         function setup() {
             createCanvas(canvasWidth, canvasHeight);
             textAlign(CENTER, CENTER);
+            playerX = width/2;
+            
+            // Create targets
+            resetTargets();
+            
+            // Log success
+            console.log("Game initialized successfully on: " + window.location.href);
+        }
+        
+        function resetTargets() {
+            targets = [];
+            for (let i = 0; i < 5; i++) {
+                targets.push({
+                    x: 100 + i * 150,
+                    y: 100,
+                    alive: true
+                });
+            }
         }
         
         function draw() {
@@ -54,6 +82,7 @@
                 drawSplashScreen();
             } else if (gameState === "playing") {
                 drawPlayingScreen();
+                updateGame();
             } else if (gameState === "won") {
                 drawWonScreen();
             }
@@ -80,16 +109,37 @@
         function drawPlayingScreen() {
             // Draw player
             fill(0, 255, 0);
-            rect(width/2 - 25, height - 50, 50, 30);
+            rect(playerX - 25, height - 50, 50, 30);
             
-            // Draw some "API" targets
-            fill(255, 0, 0);
-            for (let i = 0; i < 5; i++) {
-                ellipse(100 + i * 150, 100, 40, 40);
-                fill(255);
-                textSize(14);
-                text("API", 100 + i * 150, 100);
-                fill(255, 0, 0);
+            // Draw targets
+            for (let i = 0; i < targets.length; i++) {
+                if (targets[i].alive) {
+                    fill(255, 0, 0);
+                    ellipse(targets[i].x, targets[i].y, 40, 40);
+                    fill(255);
+                    textSize(14);
+                    text("API", targets[i].x, targets[i].y);
+                }
+            }
+            
+            // Draw score
+            fill(255);
+            textSize(18);
+            text("Score: " + score, 80, 30);
+        }
+        
+        function updateGame() {
+            // Check if all targets are gone
+            let allDead = true;
+            for (let target of targets) {
+                if (target.alive) {
+                    allDead = false;
+                    break;
+                }
+            }
+            
+            if (allDead) {
+                gameState = "won";
             }
         }
         
@@ -98,16 +148,43 @@
             textSize(32);
             text("You Won!", width/2, height/3);
             
+            textSize(24);
+            text("Score: " + score, width/2, height/2.5);
+            
             textSize(18);
             text("Press ENTER to play again", width/2, height/2);
+            
+            // Draw confetti for celebration
+            for (let i = 0; i < 100; i++) {
+                let x = random(width);
+                let y = random(height);
+                let size = random(3, 8);
+                fill(random(100, 255), random(100, 255), random(100, 255));
+                rect(x, y, size, size);
+            }
         }
         
         function keyPressed() {
+            console.log("Key pressed: " + keyCode);
+            
             if (keyCode === ENTER) {
                 if (gameState === "splash") {
                     gameState = "playing";
+                    score = 0;
+                    resetTargets();
                 } else if (gameState === "won") {
                     gameState = "splash";
+                }
+            }
+            
+            // Player movement
+            if (gameState === "playing") {
+                if (keyCode === LEFT_ARROW) {
+                    playerX = max(25, playerX - 20);
+                } else if (keyCode === RIGHT_ARROW) {
+                    playerX = min(width - 25, playerX + 20);
+                } else if (keyCode === 32) { // SPACE to shoot
+                    shoot();
                 }
             }
             
@@ -117,10 +194,35 @@
             }
         }
         
+        function shoot() {
+            // Simple shoot function - finds closest target above player
+            let closestTarget = null;
+            let minDistance = Infinity;
+            
+            for (let i = 0; i < targets.length; i++) {
+                if (targets[i].alive) {
+                    let xDist = abs(targets[i].x - playerX);
+                    if (xDist < minDistance) {
+                        minDistance = xDist;
+                        closestTarget = i;
+                    }
+                }
+            }
+            
+            if (closestTarget !== null && minDistance < 50) {
+                targets[closestTarget].alive = false;
+                score += 100;
+            }
+        }
+        
         function mousePressed() {
             // Click to start
             if (gameState === "splash") {
                 gameState = "playing";
+                score = 0;
+                resetTargets();
+            } else if (gameState === "playing") {
+                shoot();
             }
         }
     </script>
