@@ -54,6 +54,11 @@ function setup() {
     }
     
     console.log("Setup complete. Canvas size:", canvasWidth, "x", canvasHeight);
+    
+    // Hide loading message if the function exists
+    if (typeof window.hideLoadingMessages === 'function') {
+        window.hideLoadingMessages();
+    }
 }
 
 // Draw function - called every frame
@@ -309,10 +314,45 @@ function drawAPIBubble(x, y, width, height, type, state) {
 // Draw spaceship
 function drawSpaceship() {
     push();
-    fill(0, 255, 0);
-    stroke(0, 200, 0);
+    
+    // Enhanced spaceship design
+    translate(spaceship.x, spaceship.y);
+    
+    // Main body
+    fill(0, 220, 0);
+    stroke(0, 150, 0);
     strokeWeight(2 * scaleRatio);
-    rect(spaceship.x, spaceship.y, spaceship.width, spaceship.height, 5);
+    
+    // Ship body - triangle shape
+    beginShape();
+    vertex(0, -spaceship.height/2);  // Nose
+    vertex(-spaceship.width/2, spaceship.height/3);  // Left corner
+    vertex(-spaceship.width/4, spaceship.height/4);  // Left inner
+    vertex(0, spaceship.height/2);  // Bottom middle
+    vertex(spaceship.width/4, spaceship.height/4);  // Right inner
+    vertex(spaceship.width/2, spaceship.height/3);  // Right corner
+    endShape(CLOSE);
+    
+    // Cockpit
+    fill(150, 255, 150, 150);
+    noStroke();
+    ellipse(0, -spaceship.height/6, spaceship.width/3, spaceship.height/3);
+    
+    // Engines
+    fill(255, 100, 0, 200);
+    // Left engine
+    ellipse(-spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
+    // Right engine
+    ellipse(spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
+    
+    // Engine glow - pulsating effect
+    let pulse = sin(frameCount * 0.2) * 3 * scaleRatio;
+    fill(255, 150, 0, 100);
+    // Left engine glow
+    ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    // Right engine glow
+    ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    
     pop();
 }
 

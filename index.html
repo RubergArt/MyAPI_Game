@@ -6,8 +6,6 @@
     <title>API Space Game</title>
     <!-- Load p5.js library -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
-    <!-- Load our sketch file -->
-    <script src="sketch.js"></script>
     
     <style>
         html, body {
@@ -51,6 +49,7 @@
             font-family: Arial, sans-serif;
             text-align: center;
             font-size: 18px;
+            z-index: 100;
         }
         #errorMessage {
             position: fixed;
@@ -63,6 +62,7 @@
             font-size: 16px;
             max-width: 80%;
             display: none;
+            z-index: 100;
         }
         #minimalGameLink {
             position: fixed;
@@ -76,8 +76,24 @@
             text-decoration: underline;
             cursor: pointer;
             display: none;
+            z-index: 100;
         }
     </style>
+    
+    <!-- Ensure game script loads after HTML structure is ready -->
+    <script>
+        // Hide loading message when setup is complete
+        window.gameSetupComplete = false;
+        window.hideLoadingMessages = function() {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('minimalGameLink').style.display = 'none';
+            window.gameSetupComplete = true;
+        };
+    </script>
+    
+    <!-- Load our sketch file -->
+    <script src="sketch.js"></script>
 </head>
 <body>
     <div id="loadingMessage">Loading game...</div>
@@ -105,14 +121,12 @@
         
         // Fallback timer - if game doesn't start within 5 seconds, show error and minimal game link
         setTimeout(function() {
-            // Check if p5 canvas exists
-            if (document.getElementsByTagName('canvas').length === 0) {
+            // Check if p5 canvas exists AND setup is complete
+            if (document.getElementsByTagName('canvas').length === 0 || !window.gameSetupComplete) {
                 document.getElementById('loadingMessage').style.display = 'none';
                 document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('minimalGameLink').style.display = 'block';
-                console.error("Game failed to load - no canvas detected after timeout");
-            } else {
-                document.getElementById('loadingMessage').style.display = 'none';
+                console.error("Game failed to load - no canvas detected or setup didn't complete after timeout");
             }
         }, 5000);
     </script>
