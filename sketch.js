@@ -2977,7 +2977,7 @@ function drawIntegratedEmailForm() {
         fill(255);
         textAlign(CENTER, CENTER);
         textSize(18 * scaleRatio);
-        text("SIGN UP FOR UPDATES", canvasWidth / 2, canvasHeight * 0.51);
+        text("SIGN-UP FOR ADP MARKETPLACE UPDATES", canvasWidth / 2, canvasHeight * 0.51);
         
         textSize(14 * scaleRatio);
         text("Enter your email to get notified about future updates", canvasWidth / 2, canvasHeight * 0.54);
