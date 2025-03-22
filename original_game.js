@@ -1,6 +1,6 @@
 // ADP API Game - Original Version
 // Based on the original game brief with proper level progression
-// Last updated: March 26, 2025 - Force cache refresh
+// Last updated: March 26, 2025 - Enhanced alien ships and player experience
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -51,6 +51,7 @@ let emailInput = "";
 let emailSubmitted = false;
 let emailSubmitting = false;
 let emailError = "";
+let readyToProceed = false; // New variable to track if player has read the level explanation
 
 // Game elements
 let spaceship;
@@ -158,20 +159,7 @@ function draw() {
             
         case "levelCompleted":
             drawLevelCompletedScreen();
-            
-            // Proceed to next level after explanation screen
-            if (millis() - levelExplanationStartTime > 5000) {
-                if (currentLevel >= levels.length - 1) {
-                    // All levels completed, show win screen
-                    gameState = "won";
-                    winStartTime = millis();
-                } else {
-                    // Advance to next level
-                    currentLevel++;
-                    resetLevel();
-                    gameState = "playing";
-                }
-            }
+            // We no longer automatically proceed to next level - player must interact
             break;
             
         case "gameOver":
@@ -328,14 +316,20 @@ function drawLevelCompletedScreen() {
     textSize(18 * scaleRatio);
     text(levels[currentLevel].explanation, canvasWidth/2, canvasHeight/2, canvasWidth * 0.7, canvasHeight * 0.4);
     
-    // Next level message
-    fill(255, 220, 100);
-    textSize(16 * scaleRatio);
-    
-    if (currentLevel < levels.length - 1) {
-        text("Next level starting soon...", canvasWidth/2, canvasHeight - 80 * scaleRatio);
-    } else {
-        text("Congratulations! You've completed all levels!", canvasWidth/2, canvasHeight - 80 * scaleRatio);
+    // Show continue prompt after 2 seconds
+    if (millis() - levelExplanationStartTime > 2000) {
+        readyToProceed = true;
+        
+        // Pulsing prompt text
+        let pulseAmount = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
+        fill(255, 220, 100);
+        textSize(20 * scaleRatio * pulseAmount);
+        
+        if (currentLevel < levels.length - 1) {
+            text("Tap or press SPACE to continue to next level", canvasWidth/2, canvasHeight - 80 * scaleRatio);
+        } else {
+            text("Tap or press SPACE to view your certificate!", canvasWidth/2, canvasHeight - 80 * scaleRatio);
+        }
     }
 }
 
@@ -685,7 +679,7 @@ function drawAPIBubble(x, y, width, height, type, state) {
     fill(0, 0, 0, 150);
     textAlign(CENTER, CENTER);
     textStyle(BOLD);
-    textSize(16 * scaleRatio);
+    textSize(14 * scaleRatio); // Smaller font size for better fit
     text(type, x + 1.5 * scaleRatio, y + 1.5 * scaleRatio);
     
     // Text
@@ -698,35 +692,83 @@ function drawAlienShip(x, y, width, height) {
     push();
     translate(x, y);
     
-    // Main body - menacing alien ship
-    fill(100, 30, 150);
-    stroke(150, 50, 200);
-    strokeWeight(2 * scaleRatio);
+    // Add intimidating glow effect
+    noStroke();
+    for (let i = 5; i > 0; i--) {
+        let alpha = map(i, 5, 0, 10, 50);
+        fill(150, 0, 200, alpha);
+        ellipse(0, 0, width * 1.5 * i/5, height * 1.5 * i/5);
+    }
     
-    // Ship body
+    // Main body - more menacing alien ship
+    fill(60, 0, 90); // Darker purple for more evil appearance
+    stroke(200, 0, 255); // Brighter purple outline
+    strokeWeight(3 * scaleRatio);
+    
+    // Ship body - more angular and aggressive shape
     beginShape();
     vertex(-width/2, 0);
-    vertex(-width/3, -height/4);
-    vertex(width/3, -height/4);
+    vertex(-width/2.5, -height/3); // More pointed front
+    vertex(0, -height/2);  // Sharper nose
+    vertex(width/2.5, -height/3);
     vertex(width/2, 0);
-    vertex(width/3, height/4);
-    vertex(-width/3, height/4);
+    // Add jagged spikes at the back
+    vertex(width/2.5, height/5);
+    vertex(width/3, height/3);
+    vertex(width/6, height/4);
+    vertex(0, height/2);
+    vertex(-width/6, height/4);
+    vertex(-width/3, height/3);
+    vertex(-width/2.5, height/5);
     endShape(CLOSE);
     
-    // Cockpit
-    fill(255, 50, 50, 180);
+    // Evil red eye/cockpit
+    fill(255, 0, 0, 200);
     noStroke();
-    ellipse(0, 0, width/2, height/3);
+    ellipse(0, -height/10, width/3, height/4);
     
-    // Engine glow
-    fill(255, 100, 50, 150);
-    ellipse(-width/4, height/6, width/8, height/6);
-    ellipse(width/4, height/6, width/8, height/6);
+    // Add pulsing effect to the eye
+    let pulseSize = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
+    fill(255, 50, 0, 150);
+    ellipse(0, -height/10, width/3 * pulseSize, height/4 * pulseSize);
     
-    // Weapon mounts
-    fill(50, 50, 50);
-    rect(-width/3, -height/8, width/10, height/10);
-    rect(width/3, -height/8, width/10, height/10);
+    // Weapon mounts - more threatening
+    fill(30, 0, 50);
+    stroke(150, 0, 200);
+    strokeWeight(1.5 * scaleRatio);
+    
+    // Left cannon
+    beginShape();
+    vertex(-width/2.5, -height/6);
+    vertex(-width/1.8, -height/6);
+    vertex(-width/1.8, height/10);
+    vertex(-width/2.2, height/10);
+    endShape(CLOSE);
+    
+    // Right cannon
+    beginShape();
+    vertex(width/2.5, -height/6);
+    vertex(width/1.8, -height/6);
+    vertex(width/1.8, height/10);
+    vertex(width/2.2, height/10);
+    endShape(CLOSE);
+    
+    // Cannon tips - glowing effect
+    noStroke();
+    fill(255, 0, 0, 150 + 50 * sin(frameCount * 0.1));
+    ellipse(-width/1.9, height/10, width/10, height/15);
+    ellipse(width/1.9, height/10, width/10, height/15);
+    
+    // Ominous engine glow
+    let enginePulse = map(sin(frameCount * 0.2), -1, 1, 0.7, 1.3);
+    fill(255, 50, 0, 180);
+    ellipse(-width/4, height/4, width/6 * enginePulse, height/6 * enginePulse);
+    ellipse(width/4, height/4, width/6 * enginePulse, height/6 * enginePulse);
+    
+    // Inner engine glow
+    fill(255, 150, 0, 200);
+    ellipse(-width/4, height/4, width/10 * enginePulse, height/10 * enginePulse);
+    ellipse(width/4, height/4, width/10 * enginePulse, height/10 * enginePulse);
     
     pop();
 }
@@ -924,6 +966,19 @@ function keyPressed() {
             gameState = "playing";
         } else if (gameState === "playing") {
             shoot();
+        } else if (gameState === "levelCompleted" && readyToProceed) {
+            // Progress to next level or win screen
+            if (currentLevel >= levels.length - 1) {
+                // All levels completed, show win screen
+                gameState = "won";
+                winStartTime = millis();
+            } else {
+                // Advance to next level
+                currentLevel++;
+                resetLevel();
+                gameState = "playing";
+            }
+            readyToProceed = false; // Reset for next level
         } else if (gameState === "gameOver" && canRestart) {
             resetGame();
             gameState = "playing";
@@ -957,6 +1012,20 @@ function touchStarted() {
         return false;
     } else if (gameState === "instructions") {
         gameState = "playing";
+        return false;
+    } else if (gameState === "levelCompleted" && readyToProceed) {
+        // Progress to next level or win screen
+        if (currentLevel >= levels.length - 1) {
+            // All levels completed, show win screen
+            gameState = "won";
+            winStartTime = millis();
+        } else {
+            // Advance to next level
+            currentLevel++;
+            resetLevel();
+            gameState = "playing";
+        }
+        readyToProceed = false; // Reset for next level
         return false;
     } else if (gameState === "gameOver" && canRestart) {
         resetGame();
