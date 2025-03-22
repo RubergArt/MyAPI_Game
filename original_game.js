@@ -8,6 +8,7 @@
 // April 2, 2025 - Fixed score notifications when hitting correct API bubble
 // April 3, 2025 - Added personalized certificates and LinkedIn sharing
 // April 4, 2025 - Added anonymous analytics tracking
+// April 5, 2025 - Fixed iOS/iPhone compatibility issues with spaceship visibility and touch controls
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -115,6 +116,7 @@ let explosions = [];
 
 // Mobile detection and controls
 let isMobileDevice = false;
+let isIOSDevice = false; // Specific flag for iOS devices
 let leftZone, rightZone, shootZone;
 let leftZoneActive = false;
 let rightZoneActive = false;
@@ -128,9 +130,10 @@ let confetti = [];
 let scoreNotifications = [];
 
 function setup() {
-    // Check if device is mobile
+    // Check if device is mobile and specifically iOS
     isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log("Device detected as:", isMobileDevice ? "mobile" : "desktop");
+    isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    console.log("Device detected as:", isMobileDevice ? (isIOSDevice ? "iOS mobile" : "mobile") : "desktop");
     
     // Set canvas size
     if (isMobileDevice) {
@@ -1341,6 +1344,15 @@ function shoot() {
     
     // Set cooldown
     bulletCooldown = bulletCooldownTime;
+    
+    // Add haptic feedback for iOS devices if supported
+    if (isIOSDevice && 'vibrate' in navigator) {
+        try {
+            navigator.vibrate(10); // Short vibration
+        } catch (e) {
+            console.log("Vibration not supported");
+        }
+    }
 }
 
 function spawnAPI() {
@@ -1388,7 +1400,10 @@ function setupTouchControls() {
     // Only needed for mobile
     if (!isMobileDevice) return;
     
-    // Left movement zone (left third of screen)
+    // Calculate safe area for iOS devices to avoid bottom notch/home indicator
+    let bottomSafeArea = isIOSDevice ? 80 * scaleRatio : 0;
+    
+    // Left movement zone (left half of screen)
     leftZone = {
         x: canvasWidth * 0.25,
         y: canvasHeight * 0.75,
@@ -1396,7 +1411,7 @@ function setupTouchControls() {
         height: canvasHeight * 0.5
     };
     
-    // Right movement zone (right third of screen)
+    // Right movement zone (right half of screen)
     rightZone = {
         x: canvasWidth * 0.75,
         y: canvasHeight * 0.75,
@@ -1404,52 +1419,62 @@ function setupTouchControls() {
         height: canvasHeight * 0.5
     };
     
-    // Shoot button (center of screen, bottom quarter)
+    // Shoot zone (entire bottom half of screen)
     shootZone = {
         x: canvasWidth * 0.5,
         y: canvasHeight * 0.6,
-        radius: 60 * scaleRatio
+        radius: 100 * scaleRatio // Increased touch area for better response
     };
     
-    console.log("Touch zones set up for mobile");
+    console.log("Touch zones set up for mobile. Canvas size:", canvasWidth, "x", canvasHeight);
 }
 
 function checkTouchZones() {
     // Reset active states
     leftZoneActive = false;
     rightZoneActive = false;
-    shootZoneActive = false;
+    
+    // Track if we should trigger shooting
+    let shouldShoot = false;
     
     // Check each touch point
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
-        // Check left zone
-        if (touch.x < canvasWidth * 0.5 && touch.y > canvasHeight * 0.5) {
+        // For iOS, we need to check if any touch is in the shooting area
+        let touchInShootZone = false;
+        
+        // Check shoot zone first (center area)
+        let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
+        if (d < shootZone.radius) {
+            touchInShootZone = true;
+            shouldShoot = true;
+        }
+        
+        // Check left zone - only if this touch isn't already used for shooting
+        if (!touchInShootZone && touch.x < canvasWidth * 0.5) {
             leftZoneActive = true;
         }
         
-        // Check right zone
-        if (touch.x > canvasWidth * 0.5 && touch.y > canvasHeight * 0.5) {
+        // Check right zone - only if this touch isn't already used for shooting
+        if (!touchInShootZone && touch.x > canvasWidth * 0.5) {
             rightZoneActive = true;
         }
-        
-        // Check shoot zone (center area)
-        let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
-        if (d < shootZone.radius) {
-            shootZoneActive = true;
-            
-            // Shoot if not on cooldown
-            if (bulletCooldown === 0 && gameState === "playing") {
-                shoot();
-            }
-        }
+    }
+    
+    // Shoot if touch detected in shoot zone and not on cooldown
+    if (shouldShoot && bulletCooldown === 0 && gameState === "playing") {
+        shoot();
     }
     
     // Debug visualization
     if (debugMode) {
         noFill();
         strokeWeight(2);
+        
+        // Draw spaceship bounds for debugging
+        stroke(255, 255, 0);
+        rect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
         
         // Left zone
         if (leftZoneActive) stroke(0, 255, 0);
@@ -1462,9 +1487,18 @@ function checkTouchZones() {
         rect(rightZone.x, rightZone.y, rightZone.width, rightZone.height);
         
         // Shoot zone
-        if (shootZoneActive) stroke(0, 255, 0);
+        if (shouldShoot) stroke(0, 255, 0);
         else stroke(255, 0, 0);
         ellipse(shootZone.x, shootZone.y, shootZone.radius * 2);
+        
+        // Show device info
+        fill(255);
+        noStroke();
+        textAlign(LEFT, TOP);
+        textSize(14 * scaleRatio);
+        text("Device: " + (isMobileDevice ? (isIOSDevice ? "iOS" : "Mobile") : "Desktop"), 10, 90);
+        text("Canvas: " + canvasWidth + "×" + canvasHeight, 10, 110);
+        text("Scale: " + scaleRatio.toFixed(2), 10, 130);
     }
 }
 
@@ -1614,10 +1648,16 @@ function resetGame() {
     // Start at first level
     currentLevel = 0;
     
+    // Calculate the proper spaceship position for all devices
+    // For iOS, ensure it's not too close to the bottom edge
+    let spaceshipYPos = isIOSDevice ? 
+        canvasHeight - 100 * scaleRatio : // Higher position for iOS
+        canvasHeight - 50 * scaleRatio;   // Standard position
+    
     // Reset spaceship
     spaceship = {
         x: canvasWidth / 2,
-        y: canvasHeight - 50 * scaleRatio,
+        y: spaceshipYPos,
         width: 50 * scaleRatio,
         height: 40 * scaleRatio,
         speed: 5 * scaleRatio
@@ -1627,6 +1667,8 @@ function resetGame() {
     bullets = [];
     apis = [];
     asteroids = [];
+    confetti = [];
+    scoreNotifications = [];
     
     // Reset cooldown
     bulletCooldown = 0;
@@ -1641,7 +1683,7 @@ function resetGame() {
     // Keep player name across game sessions
     // playerName remains unchanged to keep personalization
     
-    console.log("Game reset complete, starting at level 1");
+    console.log("Game reset complete, starting at level 1. Spaceship at:", spaceship.x, spaceship.y);
 }
 
 function resetLevel() {
