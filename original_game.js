@@ -2,6 +2,7 @@
 // Based on the original game brief with proper level progression
 // Last updated: March 28, 2025 - Enhanced email input with all valid characters
 // March 29, 2025 - Added restart option after winning
+// March 30, 2025 - Made play again option always available
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -374,6 +375,27 @@ function drawWinScreen() {
     
     // Email collection form
     drawEmailForm();
+    
+    // Play again option (always visible)
+    drawPlayAgainButton();
+}
+
+function drawPlayAgainButton() {
+    // If email is being submitted or has been submitted, don't show this button
+    if (emailSubmitting || emailSubmitted) return;
+    
+    // Play Again button at bottom of screen
+    fill(50, 180, 50);
+    stroke(100, 255, 100);
+    strokeWeight(2 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight * 0.95, 200 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
+    
+    // Button text
+    fill(255);
+    noStroke();
+    textSize(18 * scaleRatio);
+    textAlign(CENTER, CENTER);
+    text("Play Again", canvasWidth/2, canvasHeight * 0.95);
 }
 
 function drawTrophy(x, y, size) {
@@ -1129,6 +1151,20 @@ function touchStarted() {
             mouseY > submitY - submitH/2 && mouseY < submitY + submitH/2) {
             if (!emailSubmitted && !emailSubmitting) {
                 submitEmail();
+            }
+        }
+        
+        // Check if tapped on play again button
+        let playAgainX = canvasWidth/2;
+        let playAgainY = canvasHeight * 0.95;
+        let playAgainW = 200 * scaleRatio;
+        let playAgainH = 40 * scaleRatio;
+        
+        if (mouseX > playAgainX - playAgainW/2 && mouseX < playAgainX + playAgainW/2 && 
+            mouseY > playAgainY - playAgainH/2 && mouseY < playAgainY + playAgainH/2) {
+            if (!emailSubmitting) {
+                resetGame();
+                gameState = "splash";
             }
         }
     }
