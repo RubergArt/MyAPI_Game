@@ -323,7 +323,12 @@ function draw() {
             drawSpaceship();
             
             // CRITICAL FIX: Draw and update bullets
-            updateAndDrawBullets();
+            try {
+                updateAndDrawBullets();
+            } catch (bulletError) {
+                console.error("Error in bullet processing:", bulletError);
+                // Don't let bullet errors crash the game
+            }
             
             // CRITICAL FIX: Explicitly update and draw APIs
             for (let i = apis.length - 1; i >= 0; i--) {
@@ -556,9 +561,14 @@ function shoot() {
     // Add the bullet to the array
     bullets.push(bullet);
     
-    // Play sound if available
-    if (shootSound && !isMuted) {
-        shootSound.play();
+    // Play sound if available - safely check if sound exists first
+    try {
+        if (typeof shootSound !== 'undefined' && shootSound && !isMuted) {
+            shootSound.play();
+        }
+    } catch(e) {
+        console.log("Sound playback error:", e);
+        // Don't let sound errors affect gameplay
     }
 }
 

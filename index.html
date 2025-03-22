@@ -21,6 +21,8 @@
         }
         canvas {
             display: block;
+            position: relative;
+            z-index: 10; /* Make sure canvas is above other elements */
         }
         #instructions {
             position: fixed;
@@ -39,6 +41,10 @@
             font-family: Arial, sans-serif;
             text-align: center;
             width: 100%;
+        }
+        /* Add !important to ensure these styles are applied and not overridden */
+        .hidden-permanently {
+            display: none !important;
         }
         #loadingMessage {
             position: fixed;
@@ -95,17 +101,60 @@
             var errorEl = document.getElementById('errorMessage');
             var minimalEl = document.getElementById('minimalGameLink');
             
-            // Hide them all
-            if (loadingEl) loadingEl.style.display = 'none';
-            if (errorEl) errorEl.style.display = 'none';
-            if (minimalEl) minimalEl.style.display = 'none';
+            // Hide them all and add a special class to ensure they stay hidden
+            if (loadingEl) {
+                loadingEl.style.display = 'none';
+                loadingEl.classList.add('hidden-permanently');
+            }
+            if (errorEl) {
+                errorEl.style.display = 'none';
+                errorEl.classList.add('hidden-permanently');
+            }
+            if (minimalEl) {
+                minimalEl.style.display = 'none';
+                minimalEl.classList.add('hidden-permanently');
+            }
             
             // Mark game as loaded
             window.gameSetupComplete = true;
             window.gameLoading = false;
             
             console.log("All loading messages hidden, game marked as setup complete");
+            
+            // Prevent any future manipulation of these elements
+            window.gameMessagesHidden = true;
         };
+        
+        // Override any DOM method that might show the error messages once game is loaded
+        window.addEventListener('load', function() {
+            // Wait until game has fully initialized
+            setTimeout(function() {
+                if (window.gameSetupComplete) {
+                    // Get references to all message elements
+                    const msgs = [
+                        document.getElementById('loadingMessage'),
+                        document.getElementById('errorMessage'),
+                        document.getElementById('minimalGameLink')
+                    ];
+                    
+                    // Apply permanent hiding
+                    msgs.forEach(function(el) {
+                        if (el) {
+                            // Override style.display setter
+                            Object.defineProperty(el.style, 'display', {
+                                get: function() { return 'none'; },
+                                set: function() { console.log('Blocked attempt to show message'); }
+                            });
+                            
+                            // Add class
+                            el.classList.add('hidden-permanently');
+                        }
+                    });
+                    
+                    console.log("Applied permanent message hiding protection");
+                }
+            }, 3000); // Give the game 3 seconds to initialize fully
+        });
         
         // Directly attach to the document for additional reliability
         document.addEventListener('DOMContentLoaded', function() {
@@ -169,6 +218,11 @@
             if (canvasExists && window.gameSetupComplete) {
                 console.log("Game confirmed as loaded - canvas found and setup complete");
                 window.hideLoadingMessages();
+                
+                // Once confirmed loaded, apply additional CSS to force hide messages
+                var style = document.createElement('style');
+                style.textContent = '#loadingMessage, #errorMessage, #minimalGameLink { display: none !important; }';
+                document.head.appendChild(style);
             } else if (loadingChecks >= maxLoadingChecks) {
                 console.error("Game failed to load after " + maxLoadingChecks + " attempts");
                 document.getElementById('loadingMessage').style.display = 'none';
