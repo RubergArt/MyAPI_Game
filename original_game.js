@@ -1,6 +1,6 @@
 // ADP API Game - Original Version
 // Based on the original game brief with proper level progression
-// Last updated: March 26, 2025 - Enhanced alien ships and player experience
+// Last updated: March 27, 2025 - Fixed email input for @ and . characters
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -475,13 +475,23 @@ function drawEmailForm() {
 }
 
 function submitEmail() {
-    // Simple email validation
+    // Improved email validation
     if (emailInput === "") {
         emailError = "Please enter an email address";
         return;
     }
     
-    if (!emailInput.includes('@')) {
+    // Check for both @ and . in the email
+    if (!emailInput.includes('@') || !emailInput.includes('.')) {
+        emailError = "Please enter a valid email address";
+        return;
+    }
+    
+    // Additional validation: make sure the @ comes before the last .
+    const atIndex = emailInput.indexOf('@');
+    const lastDotIndex = emailInput.lastIndexOf('.');
+    
+    if (atIndex > lastDotIndex || atIndex === -1 || lastDotIndex === -1) {
         emailError = "Please enter a valid email address";
         return;
     }
@@ -994,7 +1004,8 @@ function keyPressed() {
             submitEmail();
             return false;
         } else if (keyCode >= 32 && keyCode <= 126) {
-            // Printable characters
+            // Printable characters - this range includes all standard keyboard characters
+            // including @ and . which are essential for email addresses
             emailInput += key;
         }
     }
@@ -1044,7 +1055,15 @@ function touchStarted() {
             if (isMobileDevice) {
                 let email = prompt("Enter your email address:");
                 if (email !== null) {
+                    // Directly set the email input
                     emailInput = email;
+                    
+                    // Immediately validate the email
+                    if (!email.includes('@') || !email.includes('.')) {
+                        emailError = "Please enter a valid email address";
+                    } else {
+                        emailError = ""; // Clear any previous errors
+                    }
                 }
             }
         }
