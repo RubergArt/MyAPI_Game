@@ -4,6 +4,7 @@
 // March 29, 2025 - Added restart option after winning
 // March 30, 2025 - Made play again option always available
 // March 31, 2025 - Added epic alien explosions and certificate design
+// April 1, 2025 - Added confetti celebration, floating score notifications, and improved bubble text
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -75,6 +76,10 @@ let shootZoneActive = false;
 // Debug mode
 let debugMode = false;
 
+// Add new variables for confetti and score notifications
+let confetti = [];
+let scoreNotifications = [];
+
 function setup() {
     // Check if device is mobile
     isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -140,6 +145,9 @@ function draw() {
             
             // Update and draw explosions
             updateAndDrawExplosions();
+            
+            // Update and draw score notifications
+            updateAndDrawScoreNotifications();
             
             // Spawn new APIs periodically
             if (frameCount % 90 === 0) {
@@ -308,6 +316,9 @@ function drawLevelCompletedScreen() {
     // Background overlay
     fill(0, 0, 30, 200);
     rect(canvasWidth/2, canvasHeight/2, canvasWidth, canvasHeight);
+    
+    // Draw celebratory confetti
+    updateAndDrawConfetti();
     
     // Level completed message
     fill(255);
@@ -822,6 +833,12 @@ function updateAndDrawBullets() {
                     api.state = "correct";
                     score += 100; // +100 for correct API
                     
+                    // Create floating score notification
+                    createScoreNotification(api.x, api.y, "+100", [50, 255, 100]);
+                    
+                    // Create confetti for level completion
+                    createConfetti();
+                    
                     // Level completed
                     gameState = "levelCompleted";
                     levelExplanationStartTime = millis();
@@ -830,6 +847,9 @@ function updateAndDrawBullets() {
                     api.state = "incorrect";
                     score -= 50; // -50 for incorrect API
                     score = max(0, score); // Prevent negative score
+                    
+                    // Create floating score notification
+                    createScoreNotification(api.x, api.y, "-50", [255, 80, 80]);
                 }
                 
                 // Remove API after marking it
@@ -862,6 +882,10 @@ function updateAndDrawBullets() {
                 
                 // Give points for destroying asteroid
                 score += 25;
+                
+                // Create floating score notification
+                createScoreNotification(asteroid.x, asteroid.y, "+25", [255, 200, 100]);
+                
                 break;
             }
         }
@@ -941,12 +965,17 @@ function drawAPIBubble(x, y, width, height, type, state) {
     
     ellipse(x, y, width * 0.8, height * 0.5);
     
+    // Calculate text size based on API name length to ensure it fits
+    let baseTextSize = 13 * scaleRatio; // Reduced base font size
+    let textSizeFactor = map(constrain(type.length, 5, 15), 5, 15, 1.0, 0.7);
+    let finalTextSize = baseTextSize * textSizeFactor;
+    
     // API text with drop shadow for better visibility
     // Shadow
     fill(0, 0, 0, 150);
     textAlign(CENTER, CENTER);
     textStyle(BOLD);
-    textSize(14 * scaleRatio); // Smaller font size for better fit
+    textSize(finalTextSize);
     text(type, x + 1.5 * scaleRatio, y + 1.5 * scaleRatio);
     
     // Text
@@ -1544,5 +1573,144 @@ function updateAndDrawExplosions() {
                 pop();
             }
         }
+    }
+}
+
+// Function to create celebratory confetti
+function createConfetti() {
+    // Create a lot of confetti particles
+    for (let i = 0; i < 150; i++) {
+        // Randomize starting positions across the top area of the screen
+        let x = random(canvasWidth * 0.2, canvasWidth * 0.8);
+        let y = random(-20, canvasHeight * 0.3);
+        
+        // Random colors for festive look
+        let colors = [
+            [255, 50, 50],   // Red
+            [50, 255, 100],  // Green
+            [50, 150, 255],  // Blue
+            [255, 255, 50],  // Yellow
+            [255, 150, 50],  // Orange
+            [200, 100, 255]  // Purple
+        ];
+        
+        let color = random(colors);
+        
+        // Random shapes (0 = rectangle, 1 = circle, 2 = triangle)
+        let shape = floor(random(3));
+        
+        confetti.push({
+            x: x,
+            y: y,
+            vx: random(-2, 2) * scaleRatio,
+            vy: random(1, 4) * scaleRatio,
+            size: random(4, 12) * scaleRatio,
+            color: color,
+            rotation: random(TWO_PI),
+            rotationSpeed: random(-0.1, 0.1),
+            shape: shape,
+            oscillationSpeed: random(0.01, 0.05),
+            oscillationAmplitude: random(1, 3) * scaleRatio,
+            timeCreated: millis(),
+            lifespan: random(2000, 5000) // Particles live between 2-5 seconds
+        });
+    }
+}
+
+// Function to update and draw confetti particles
+function updateAndDrawConfetti() {
+    for (let i = confetti.length - 1; i >= 0; i--) {
+        let particle = confetti[i];
+        let timePassed = millis() - particle.timeCreated;
+        
+        // Remove old particles
+        if (timePassed > particle.lifespan) {
+            confetti.splice(i, 1);
+            continue;
+        }
+        
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        
+        // Add slight oscillation for fluttering effect
+        let oscillation = sin(timePassed * particle.oscillationSpeed) * particle.oscillationAmplitude;
+        particle.x += oscillation;
+        
+        // Update rotation
+        particle.rotation += particle.rotationSpeed;
+        
+        // Gradually slow down velocity 
+        particle.vy *= 0.98;
+        
+        // Calculate alpha based on particle lifetime
+        let alpha = map(timePassed, 0, particle.lifespan, 255, 0);
+        
+        // Draw particle
+        push();
+        translate(particle.x, particle.y);
+        rotate(particle.rotation);
+        fill(particle.color[0], particle.color[1], particle.color[2], alpha);
+        noStroke();
+        
+        // Draw different shapes based on the particle type
+        if (particle.shape === 0) {
+            // Rectangle
+            rect(0, 0, particle.size, particle.size * 0.8);
+        } else if (particle.shape === 1) {
+            // Circle
+            ellipse(0, 0, particle.size, particle.size);
+        } else {
+            // Triangle
+            triangle(0, -particle.size/2, 
+                    particle.size/2, particle.size/2, 
+                    -particle.size/2, particle.size/2);
+        }
+        pop();
+    }
+}
+
+// Function to create floating score notifications
+function createScoreNotification(x, y, text, color) {
+    scoreNotifications.push({
+        x: x,
+        y: y,
+        text: text,
+        color: color,
+        timeCreated: millis(),
+        lifespan: 1000 // Score notifications live 1 second
+    });
+}
+
+// Function to update and draw score notifications
+function updateAndDrawScoreNotifications() {
+    for (let i = scoreNotifications.length - 1; i >= 0; i--) {
+        let notification = scoreNotifications[i];
+        let timePassed = millis() - notification.timeCreated;
+        
+        // Remove old notifications
+        if (timePassed > notification.lifespan) {
+            scoreNotifications.splice(i, 1);
+            continue;
+        }
+        
+        // Move notification upward
+        notification.y -= 1 * scaleRatio;
+        
+        // Calculate alpha based on lifetime
+        let alpha = map(timePassed, 0, notification.lifespan, 255, 0);
+        
+        // Calculate size with a slight pulse effect
+        let pulseAmount = map(sin(timePassed * 0.02), -1, 1, 0.9, 1.1);
+        let size = 24 * scaleRatio * pulseAmount;
+        
+        // Draw text
+        push();
+        fill(notification.color[0], notification.color[1], notification.color[2], alpha);
+        textAlign(CENTER, CENTER);
+        textStyle(BOLD);
+        textSize(size);
+        text(notification.text, notification.x, notification.y);
+        pop();
     }
 } 
