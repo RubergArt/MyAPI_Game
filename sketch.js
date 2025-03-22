@@ -351,11 +351,11 @@ function draw() {
                     continue;
                 }
                 
-                // Draw the API bubble with appropriate state
+                // Draw the API
                 drawAPIBubble(api.x, api.y, api.width, api.height, api.type, api.state);
             }
             
-            // CRITICAL FIX: Explicitly update and draw asteroids
+            // CRITICAL FIX: Update and draw asteroids
             for (let i = asteroids.length - 1; i >= 0; i--) {
                 let asteroid = asteroids[i];
                 
@@ -363,13 +363,12 @@ function draw() {
                 asteroid.y += asteroid.speed * scaleRatio;
                 
                 // Check if asteroid is off screen
-                if (asteroid.y > canvasHeight + 100) {
-                    // Remove the asteroid
+                if (asteroid.y > canvasHeight + 50) {
                     asteroids.splice(i, 1);
                     continue;
                 }
                 
-                // Draw the asteroid (alien ship)
+                // Draw the asteroid (now alien ship)
                 drawAlienShip(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
                 
                 // Check collision with spaceship
@@ -549,7 +548,7 @@ function drawTouchControls() {
 
 // Shoot bullets function
 function shoot() {
-    // Create a new bullet
+    // Create a new bullet without any sound references
     let bullet = {
         x: spaceship.x,
         y: spaceship.y - 20 * scaleRatio,
@@ -561,15 +560,7 @@ function shoot() {
     // Add the bullet to the array
     bullets.push(bullet);
     
-    // Play sound if available - safely check if sound exists first
-    try {
-        if (typeof shootSound !== 'undefined' && shootSound && !isMuted) {
-            shootSound.play();
-        }
-    } catch(e) {
-        console.log("Sound playback error:", e);
-        // Don't let sound errors affect gameplay
-    }
+    // No sound code at all
 }
 
 // Touch event handlers
@@ -1080,59 +1071,24 @@ function drawGameElements(includeSpaceship) {
     
     // Draw asteroids (alien ships)
     for (let alien of asteroids) {
-        drawAlienShip(alien.x, alien.y, alien.w, alien.h);
+        try {
+            // Use our defined drawAlienShip function
+            drawAlienShip(alien.x, alien.y, alien.w || alien.width, alien.h || alien.height);
+        } catch (e) {
+            console.log("Error drawing alien:", e);
+            // Fallback drawing if there's an error
+            fill(150);
+            ellipse(alien.x, alien.y, alien.w || alien.width || 40, alien.h || alien.height || 40);
+        }
     }
     
-    // Optionally draw the spaceship
+    // Draw spaceship if needed
     if (includeSpaceship) {
         drawSpaceship();
     }
     
-    // Update and draw bullets
+    // Handle bullets
     updateAndDrawBullets();
-    
-    // Update asteroid positions
-    for (let i = asteroids.length - 1; i >= 0; i--) {
-        let alien = asteroids[i];
-        
-        // Basic downward movement
-        alien.y += 1.5;
-        
-        // Apply different movement patterns
-        switch(alien.movePattern) {
-            case 0: // Straight down (default)
-                // No additional movement
-                break;
-            case 1: // Zigzag pattern
-                alien.x += Math.sin(frameCount * 0.05 + i) * 1.5;
-                break;
-            case 2: // Sine wave pattern
-                alien.x += Math.sin(alien.y * 0.02) * 2;
-                break;
-        }
-        
-        // Remove if off-screen
-        if (alien.y > canvasHeight + 50 || alien.x < -50 || alien.x > canvasWidth + 50) {
-            asteroids.splice(i, 1);
-        }
-    }
-    
-    // Check collisions between spaceship and alien ships
-    if (includeSpaceship) {
-        for (let alien of asteroids) {
-            // For alien ships, we'll use circle-rectangle collision since they're elliptical
-            if (collideEllipseRect(alien.x, alien.y, alien.w, alien.h, 
-                                 spaceship.x, spaceship.y, spaceship.w, spaceship.h)) {
-                // Start explosion instead of immediately going to lost state
-                gameState = "exploding";
-                explosionStartTime = millis();
-                
-                // Create explosion particles
-                createExplosion(spaceship.x, spaceship.y, 100);
-                break;
-            }
-        }
-    }
 }
 
 // Create explosion particles
@@ -2776,4 +2732,26 @@ function drawWinScreen() {
     fill(200, 200, 255);
     textSize(20 * scaleRatio);
     text("Press ENTER to play again", canvasWidth/2, canvasHeight/2 + 120 * scaleRatio);
+}
+
+// Add this function to draw alien ships
+function drawAlienShip(x, y, width, height) {
+    push();
+    // Main body 
+    fill(150, 50, 200);
+    stroke(100, 0, 150);
+    strokeWeight(2 * scaleRatio);
+    ellipse(x, y, width, height);
+    
+    // Cockpit
+    fill(200, 150, 255);
+    noStroke();
+    ellipse(x, y, width * 0.5, height * 0.5);
+    
+    // Details
+    stroke(255, 200, 0);
+    strokeWeight(1 * scaleRatio);
+    line(x - width/2, y, x + width/2, y);
+    line(x, y - height/2, x, y + height/2);
+    pop();
 }

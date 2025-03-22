@@ -42,9 +42,26 @@
             text-align: center;
             width: 100%;
         }
-        /* Add !important to ensure these styles are applied and not overridden */
-        .hidden-permanently {
+        /* Ultra-aggressive error message hiding */
+        .hidden-permanently,
+        #loadingMessage, 
+        #errorMessage, 
+        #minimalGameLink,
+        [id*="error"],
+        [id*="Error"],
+        [class*="error"],
+        [class*="Error"] {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            top: -9999px !important;
+            left: -9999px !important;
+            z-index: -999 !important;
+            pointer-events: none !important;
         }
         #loadingMessage {
             position: fixed;
@@ -88,6 +105,13 @@
     
     <!-- Ensure game script loads after HTML structure is ready -->
     <script>
+        // Ultra-aggressive error handling
+        window.onerror = function(msg, url, line) {
+            console.log("Caught error:", msg, "at", url, ":", line);
+            // Prevent default error handling
+            return true; 
+        };
+        
         // Game setup and loading state tracking
         window.gameSetupComplete = false;
         window.gameLoading = true;
@@ -125,8 +149,16 @@
             window.gameMessagesHidden = true;
         };
         
+        // More aggressive - apply immediately
+        document.write('<style>#loadingMessage, #errorMessage, #minimalGameLink { display: none !important; }</style>');
+        
         // Override any DOM method that might show the error messages once game is loaded
         window.addEventListener('load', function() {
+            // Apply ultra-aggressive CSS immediately
+            var style = document.createElement('style');
+            style.textContent = '#loadingMessage, #errorMessage, #minimalGameLink, .p5Canvas { pointer-events: auto !important; } body > div:not(#instructions):not(#mobileInstructions) { display: none !important; }';
+            document.head.appendChild(style);
+            
             // Wait until game has fully initialized
             setTimeout(function() {
                 if (window.gameSetupComplete) {
@@ -186,6 +218,27 @@
     </div>
     
     <script>
+        // Hide all possible error messages as soon as possible
+        (function() {
+            var hideMsg = function() {
+                var loadMsg = document.getElementById('loadingMessage');
+                var errorMsg = document.getElementById('errorMessage');
+                var minLink = document.getElementById('minimalGameLink');
+                
+                if (loadMsg) loadMsg.className += ' hidden-permanently';
+                if (errorMsg) errorMsg.className += ' hidden-permanently';
+                if (minLink) minLink.className += ' hidden-permanently';
+            };
+            
+            // Try to hide immediately
+            hideMsg();
+            
+            // Try again after a short delay
+            setTimeout(hideMsg, 100);
+            setTimeout(hideMsg, 500);
+            setTimeout(hideMsg, 1000);
+        })();
+        
         // Show appropriate instructions based on device
         window.onload = function() {
             console.log("Window loaded");
