@@ -104,15 +104,33 @@ let cursorVisible = true;
 let cursorTimer = 0;
 let inputActive = false;
 
+// Add this global variable at the top with the other variables
+let targetAPI = ""; // Will store the currently targeted API type
+
+// Initialize variables needed for game functionality
+// These variables will be properly initialized in setup() and resetGame()
+let leftZone, rightZone, shootZone;
+let leftZoneActive = false;
+let rightZoneActive = false;
+let shootZoneActive = false;
+let canRestart = false;
+let gameOverStartTime = 0;
+let winTime = 0;
+let targetAPICount = 10; // Number of correct APIs needed to win
+let bulletCooldownTime = 15; // Frames between shots
+let apiSpawnRate = 120; // Frames between API spawns
+let asteroidSpawnRate = 180; // Frames between asteroid spawns
+
 // Setup function to initialize the canvas and spaceship
 function setup() {
-    // Check if device is mobile
-    isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // CRITICAL FIX: Define and synchronize mobile detection
+    isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    isMobile = isMobileDevice; // Ensure both variables match
     
-    console.log("Device detected as:", isMobile ? "mobile" : "desktop");
+    console.log("Device detected as:", isMobileDevice ? "mobile" : "desktop");
     
     // Set canvas size based on device
-    if (isMobile) {
+    if (isMobileDevice) {
         // Use full window size for mobile
         canvasWidth = windowWidth;
         canvasHeight = windowHeight;
@@ -138,125 +156,55 @@ function setup() {
     emailSubmitted = false;
     emailError = "";
     
-    // Initialize Supabase client if the libraries are loaded
-    try {
-        console.log("Attempting to initialize Supabase client...");
-        console.log("Supabase URL:", SUPABASE_URL);
-        
-        if (typeof supabase !== 'undefined') {
-            console.log("Supabase library detected, creating client");
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-            // Test if the client was created correctly
-            if (supabaseClient && typeof supabaseClient.from === 'function') {
-                console.log("Supabase client initialized successfully");
-        
-                // Test connection by checking if the table exists and if we have insert permission
-                (async () => {
-                    try {
-                        console.log("Testing Supabase connection and permissions...");
-        
-                        // First check if table exists with a simple select
-                        const { data: selectData, error: selectError } = await supabaseClient
-                            .from('email_subscribers')
-                            .select('id')
-                            .limit(1);
-                            
-                        if (selectError) {
-                            if (selectError.code === "42P01") {
-                                console.error("Supabase table 'email_subscribers' not found. Please create it first.");
-                            } else if (selectError.code === "42501" || selectError.message.includes("permission denied")) {
-                                console.error("Permission denied accessing 'email_subscribers' table. Check RLS policies.");
-                            } else {
-                                console.error("Error testing Supabase connection:", selectError);
-                            }
-                        } else {
-                            console.log("Table exists. Now testing insert permission...");
-        
-                            // Create a test object with a random email to avoid conflicts
-                            const testEmail = `test_${Date.now()}@example.com`;
-                            const testObject = {
-                                email: testEmail,
-                                name: "Test User",
-                                professional_title: "Test",
-                                score: 0,
-                                submitted_at: new Date().toISOString(),
-                                game_outcome: "test"
-                            };
-        
-                            // Try inserting it (we'll delete it right after)
-                            const { error: insertError } = await supabaseClient
-                                .from('email_subscribers')
-                                .insert([testObject]);
-                                
-                            if (insertError) {
-                                console.error("Insert permission test failed:", insertError);
-                                console.error("Please check your RLS policies - you need an INSERT policy.");
-                            } else {
-                                console.log("Insert permission test successful!");
-                                
-                                // Clean up the test data
-                                await supabaseClient
-                                    .from('email_subscribers')
-                                    .delete()
-                                    .match({ email: testEmail });
-                                    
-                                console.log("Supabase is fully configured and working correctly!");
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Exception testing Supabase connection:", e);
-                    }
-                })();
-            } else {
-                console.error("Supabase client created but appears invalid");
-            }
-        } else {
-            console.error("Supabase library not loaded! Email collection will not work. Check if the supabase-js script is included in index.html.");
-        }
-    } catch (e) {
-        console.error("Error initializing Supabase client:", e);
-    }
+    // CRITICAL FIXES FOR GAMEPLAY
     
-    // Set up touch zones for mobile controls
-    setupTouchControls();
+    // Initialize/reset the game
+    resetGame();
     
     // Create galaxy background elements
     createGalaxyBackground();
     
-    // Initialize or reset the game
-    resetGame();
+    // Set up touch zones for mobile controls
+    setupTouchControls();
     
     // Record start time for game statistics
     gameStartTime = millis();
+    
+    console.log("Setup complete. Game initialized with canvas size:", canvasWidth, "x", canvasHeight);
 }
 
 // Set up touch control areas for mobile
 function setupTouchControls() {
-    if (!isMobile) return;
+    console.log("Setting up touch controls");
     
-    console.log("Setting up touch controls for mobile device");
-    console.log("Canvas dimensions:", canvasWidth, "x", canvasHeight);
-    console.log("Scale ratio:", scaleRatio);
+    // Define left movement zone (left third of screen, bottom half)
+    leftZone = {
+        x: canvasWidth * 0.25,
+        y: canvasHeight * 0.75, // Positioned lower for better thumb access
+        width: canvasWidth * 0.5,
+        height: canvasHeight * 0.5
+    };
     
-    // Left movement zone (left 1/3 of screen)
-    touchZones.left.width = canvasWidth / 3;
-    touchZones.left.height = canvasHeight;
-    touchZones.left.x = touchZones.left.width / 2;
-    touchZones.left.y = canvasHeight * 0.6; // Position in the lower part of the screen for easier thumb access
+    // Define right movement zone (right third of screen, bottom half)
+    rightZone = {
+        x: canvasWidth * 0.75,
+        y: canvasHeight * 0.75, // Positioned lower for better thumb access
+        width: canvasWidth * 0.5,
+        height: canvasHeight * 0.5
+    };
     
-    // Right movement zone (right 1/3 of screen)
-    touchZones.right.width = canvasWidth / 3;
-    touchZones.right.height = canvasHeight;
-    touchZones.right.x = canvasWidth - touchZones.right.width / 2;
-    touchZones.right.y = canvasHeight * 0.6; // Position in the lower part of the screen
+    // Define shoot button zone (center of screen, bottom quarter)
+    // Make it a circle with larger radius for easy tapping
+    shootZone = {
+        x: canvasWidth * 0.5,
+        y: canvasHeight * 0.6, // Higher position for better access
+        radius: 60 * scaleRatio // Larger radius for easier tapping
+    };
     
-    // Shoot button (bottom center) - make it larger and more accessible
-    touchZones.shoot.radius = 60 * scaleRatio; // Larger radius for easier tapping
-    touchZones.shoot.x = canvasWidth / 2;
-    touchZones.shoot.y = canvasHeight - 100 * scaleRatio; // Position higher up from the bottom
-    
-    console.log("Touch zones configured:", touchZones);
+    console.log("Touch zones configured:", 
+                "Left:", leftZone, 
+                "Right:", rightZone, 
+                "Shoot:", shootZone);
 }
 
 // Window resize handler
@@ -316,425 +264,165 @@ function createGalaxyBackground() {
 // Main game loop
 function draw() {
     try {
-        // Wrap the entire draw function in a try-catch to prevent game crashes
+        // Clear the canvas
+        background(0);
         
-        // Draw galaxy background instead of plain black
-        drawGalaxyBackground();
-
+        // Handle different game states
         if (gameState === "splash") {
-            // Draw splash screen with company branding
             drawSplashScreen();
             
-            // After timeout, switch to about screen
-            if (millis() > splashTimeout) {
-                gameState = "about";
+            // DEBUG: Log state for troubleshooting
+            if (frameCount % 60 === 0) {
+                console.log("In splash state, waiting for input");
             }
-        }
+        } 
         else if (gameState === "about") {
-            // Draw the about/intro screen
             drawAboutScreen();
         }
         else if (gameState === "playing") {
-            // On desktop, use keyboard to shoot
-            // On mobile, use touch controls
+            // Draw starry background
+            drawStarryBackground();
             
-            // Display the current HR use case objective
-            drawObjectivePanel();
-
-            // Move the spaceship based on controls
+            // Process player movement based on key presses or touch controls
             handlePlayerMovement();
-
-            // Spawn APIs at intervals
-            frameCountAPI++;
-            if (frameCountAPI >= apiSpawnInterval) {
-                let apiTypes = ["Hire API", "Rate change API", "Job change API", "Pay Data API", "Terminate API"];
+            
+            // For mobile devices, check touch zones
+            if (isMobileDevice) {
+                checkTouchZones();
+            }
+            
+            // CRITICAL FIX: Draw the spaceship directly
+            drawSpaceship();
+            
+            // CRITICAL FIX: Draw and update bullets
+            updateAndDrawBullets();
+            
+            // CRITICAL FIX: Explicitly update and draw APIs
+            for (let i = apis.length - 1; i >= 0; i--) {
+                let api = apis[i];
                 
-                // Increase chance of spawning the correct API
-                let type;
-                if (random(1) < 0.4) { // 40% chance to spawn the correct API
-                    type = levels[currentLevel].correctAPI;
-                } else {
-                    // Otherwise pick a random one that's not the correct one
-                    let incorrectTypes = apiTypes.filter(t => t !== levels[currentLevel].correctAPI);
-                    type = random(incorrectTypes);
+                // Update API position
+                api.y += api.speed * scaleRatio;
+                
+                // Check if API is off screen
+                if (api.y > canvasHeight + 50) {
+                    // Remove the API
+                    apis.splice(i, 1);
+                    
+                    // Penalize missing an API
+                    if (api.state === "normal") {
+                        score -= 1;
+                        score = max(0, score); // Prevent negative score
+                    }
+                    
+                    continue;
                 }
                 
-                // Check if this is the correct API for the current level
-                let isCorrect = (type === levels[currentLevel].correctAPI);
-                
-                // All APIs have the same size - slightly larger to fit text better
-                let size = 85;
-                
-                // Make sure all properties are properly initialized
-                let api = { 
-                    x: random(50, canvasWidth - 50), 
-                    y: -50, // Start above the visible area
-                    w: size * scaleRatio,
-                    h: size * scaleRatio,
-                    type: type,
-                    isCorrect: isCorrect,
-                    state: "normal", // Can be "normal", "correct", or "incorrect"
-                    hitTime: 0,
-                    removeDelay: 0
-                };
-                
-                apis.push(api);
-                frameCountAPI = 0;
-            }
-
-            // Spawn asteroids (bugs) at intervals
-            frameCountAsteroid++;
-            if (frameCountAsteroid >= asteroidSpawnInterval) {
-                // Create a new asteroid/alien ship
-                let movePattern = floor(random(3)); // 0: straight, 1: zigzag, 2: sine wave
-                
-                let asteroid = {
-                    x: random(50, canvasWidth - 50),
-                    y: -50, // Start above the visible area
-                    w: 60 * scaleRatio,
-                    h: 40 * scaleRatio,
-                    movePattern: movePattern
-                };
-                
-                asteroids.push(asteroid);
-                frameCountAsteroid = 0;
+                // Draw the API bubble with appropriate state
+                drawAPIBubble(api.x, api.y, api.width, api.height, api.type, api.state);
             }
             
-            // Draw all game elements
-            drawGameElements(true);
-            
-            // Handle bullet cooldown
-            if (bulletCooldown > 0) bulletCooldown--;
-            
-            // On mobile, draw touch controls
-            if (isMobile) {
-                drawTouchControls();
-            }
-            
-            // Add professional statistics overlay
-            drawProfessionalStats();
-        } 
-        else if (gameState === "levelCompleted") {
-            // Draw the spaceship
-            drawGameElements(true);
-            
-            // Show celebration message
-            fill(255, 215, 0); // Gold color
-            textSize(36 * scaleRatio);
-            text("Correct API Choice!", canvasWidth / 2, canvasHeight / 2 - 70 * scaleRatio);
-            
-            // Show explanation of the API with improved formatting
-            let explanation = levels[currentLevel].explanation;
-            
-            // Calculate appropriate text size based on device and explanation length
-            let explanationSize = 20 * scaleRatio;
-            if (isMobile) {
-                explanationSize = 18 * scaleRatio;
-            }
-            if (explanation.length > 80) {
-                explanationSize *= 0.9;
-            }
-            
-            // Format explanation text to fit the screen
-            let formattedExplanation = explanation;
-            if ((isMobile && explanation.length > 40) || explanation.length > 60) {
-                // Find a good breaking point
-                let middleIndex = Math.floor(explanation.length / 2);
-                let breakIndex = explanation.lastIndexOf(' ', middleIndex + 10);
-                if (breakIndex === -1) breakIndex = middleIndex;
+            // CRITICAL FIX: Explicitly update and draw asteroids
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                let asteroid = asteroids[i];
                 
-                formattedExplanation = explanation.substring(0, breakIndex) + '\n' + 
-                                      explanation.substring(breakIndex + 1);
+                // Update asteroid position
+                asteroid.y += asteroid.speed * scaleRatio;
+                
+                // Check if asteroid is off screen
+                if (asteroid.y > canvasHeight + 100) {
+                    // Remove the asteroid
+                    asteroids.splice(i, 1);
+                    continue;
+                }
+                
+                // Draw the asteroid (alien ship)
+                drawAlienShip(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
+                
+                // Check collision with spaceship
+                let d = dist(spaceship.x, spaceship.y, asteroid.x, asteroid.y);
+                if (d < (spaceship.width / 2 + asteroid.width / 2) * 0.7) {
+                    // Collision with spaceship - player loses
+                    gameState = "gameover";
+                    // Store when the game over state started
+                    gameOverStartTime = millis();
+                    console.log("Game over triggered by collision with asteroid");
+                }
             }
             
+            // Spawn new APIs periodically
+            if (frameCount % apiSpawnRate === 0) {
+                spawnAPI();
+                console.log("Spawned new API, total:", apis.length);
+            }
+            
+            // Spawn new asteroids periodically
+            if (frameCount % asteroidSpawnRate === 0) {
+                spawnAsteroid();
+                console.log("Spawned new asteroid, total:", asteroids.length);
+            }
+            
+            // Process bullet cooldown
+            if (bulletCooldown > 0) {
+                bulletCooldown--;
+            }
+            
+            // Draw score
             fill(255);
-            textSize(explanationSize);
-            text(formattedExplanation, canvasWidth / 2, canvasHeight / 2);
-            
-            // Professional context with better spacing
-            let contextYPos = canvasHeight / 2 + 40 * scaleRatio;
-            if (formattedExplanation.includes('\n')) {
-                contextYPos += 10 * scaleRatio; // Add more space for multiline explanations
-            }
-            
-            fill(200, 255, 200);
-            textSize(18 * scaleRatio);
-            text("API integrations save businesses time and resources and create efficient workflows", canvasWidth / 2, contextYPos);
-            
-            // Update and draw fireworks
-            updateFireworks();
-            
-            // Add hashtags for social sharing with better positioning
-            let hashtagYPos = contextYPos + 40 * scaleRatio;
-            
-            fill(180, 180, 255);
             textSize(16 * scaleRatio);
-            text("#PayrollAPI #HRTech #APIExpert #ADP #ADPMarketPlace", canvasWidth / 2, hashtagYPos);
+            textAlign(LEFT, TOP);
+            text("Score: " + score, 20 * scaleRatio, 20 * scaleRatio);
             
-            // Add "Tap or press any key to continue" message with blinking effect
-            let continueYPos = hashtagYPos + 40 * scaleRatio;
+            // Draw correct and incorrect counts
+            textSize(12 * scaleRatio);
+            text("Correct: " + correctAPICount, 20 * scaleRatio, 50 * scaleRatio);
+            text("Incorrect: " + incorrectAPICount, 20 * scaleRatio, 70 * scaleRatio);
             
-            // Always show message - make it more visible with blinking
-            if (Math.floor((millis() % 1000) / 500)) {
-                fill(255, 255, 100); // Brighter yellow for more visibility
-                textSize(22 * scaleRatio);
-            } else {
-                fill(200, 200, 150);
-                textSize(20 * scaleRatio);
+            // Draw API count to win
+            textAlign(RIGHT, TOP);
+            text("APIs to win: " + (targetAPICount - correctAPICount), canvasWidth - 20 * scaleRatio, 20 * scaleRatio);
+            
+            // Display target API info
+            textAlign(LEFT, BOTTOM);
+            fill(255, 255, 100);
+            textSize(14 * scaleRatio);
+            text("Target API: " + targetAPI, 20 * scaleRatio, canvasHeight - 20 * scaleRatio);
+            
+            // Check win condition
+            if (correctAPICount >= targetAPICount) {
+                gameState = "won";
+                winTime = millis();
+                console.log("Win condition met!");
             }
+        } 
+        else if (gameState === "gameover") {
+            drawGameOverScreen();
             
-            // Make the text more prominent
-            textStyle(BOLD);
-            text("TAP OR PRESS ANY KEY TO CONTINUE", canvasWidth / 2, continueYPos);
-            textStyle(NORMAL);
-            
-            // IMPORTANT: Only advance on key press or tap - removed auto-advance with timer
-            // This code was previously here but is now handled in keyPressed/touchEnded functions
-        }
-        else if (gameState === "exploding") {
-            // Draw all the game elements in the background (APIs, asteroids)
-            drawGameElements(false); // Don't draw the spaceship
-            
-            // Update and display explosion particles
-            updateExplosion();
-            
-            // Check if explosion duration has passed
-            if (millis() - explosionStartTime > explosionDuration) {
-                gameState = "lost"; // Now go to the lost state
-                
-                // Hide email collection form if it's showing
-                // Only collect emails when player wins
-                showEmailCollection = false;
-                emailInputActive = false;
+            // Check if enough time has passed to allow restart
+            if (millis() - gameOverStartTime > 2000) {
+                canRestart = true;
             }
         } 
         else if (gameState === "won") {
-            // Create a professional panel background
-            fill(10, 20, 40, 200);
-            noStroke();
-            rect(canvasWidth / 2, canvasHeight / 2, canvasWidth * 0.9, canvasHeight * 0.9, 15 * scaleRatio);
-            
-            // Add border to panel
-            noFill();
-            stroke(brandColor[0], brandColor[1], brandColor[2], 150);
-            strokeWeight(2 * scaleRatio);
-            rect(canvasWidth / 2, canvasHeight / 2, canvasWidth * 0.88, canvasHeight * 0.88, 13 * scaleRatio);
-            
-            // SECTION 1: TOP AREA - TITLE AND TROPHY
-            // Display win message with personalization - positioned at top
-            noStroke();
-            fill(255, 215, 0); // Gold color
-            textSize(36 * scaleRatio);
-            textAlign(CENTER, CENTER);
-            text("API Integration Expert!", canvasWidth / 2, canvasHeight * 0.12);
-            
-            // Trophy next to the title
-            push();
-            translate(canvasWidth / 2, canvasHeight * 0.22);
-            drawCertificationBadge();
-            pop();
-            
-            // SECTION 2: PLAYER INFO - Name, Title, Score
-            // Personal branding 
-            textSize(26 * scaleRatio);
-            fill(255);
-            text(playerName, canvasWidth / 2, canvasHeight * 0.32);
-            
-            // Display professional title
-            textSize(20 * scaleRatio);
-            fill(180, 220, 255);
-            text(professionalTitle, canvasWidth / 2, canvasHeight * 0.37);
-            
-            // Display final score with professional context
-            textSize(28 * scaleRatio);
-            fill(255);
-            text("Final Score: " + score, canvasWidth / 2, canvasHeight * 0.43);
-            
-            // First separator line
-            stroke(100, 150, 200, 150);
-            strokeWeight(1 * scaleRatio);
-            line(canvasWidth * 0.3, canvasHeight * 0.47, canvasWidth * 0.7, canvasHeight * 0.47);
-            
-            // SECTION 3: EMAIL COLLECTION - Only if not submitted
-            if (!emailSubmitted) {
-                // Show email collection form
-                drawIntegratedEmailForm();
-            } else {
-                // Thank you message if email was submitted
-                noStroke();
-                fill(70, 255, 120);
-                textSize(20 * scaleRatio);
-                textAlign(CENTER, CENTER);
-                text("Thank you for subscribing!", canvasWidth / 2, canvasHeight * 0.55);
-            }
-            
-            // Second separator line
-            noStroke();
-            stroke(100, 150, 200, 150);
-            strokeWeight(1 * scaleRatio);
-            line(canvasWidth * 0.3, canvasHeight * 0.64, canvasWidth * 0.7, canvasHeight * 0.64);
-            
-            // SECTION 4: LINKEDIN SHARING
-            // LinkedIn context heading
-            noStroke();
-            fill(255);
-            textSize(18 * scaleRatio);
-            text("Showcase your Payroll & HR API knowledge:", canvasWidth / 2, canvasHeight * 0.69);
-            
-            // LinkedIn benefit text
-            fill(200, 200, 200);
-            textSize(16 * scaleRatio);
-            text("Stand out to recruiters and hiring managers in the HR tech space", 
-                canvasWidth / 2, canvasHeight * 0.73);
-            
-            // LinkedIn sharing button - moved down by increasing Y position
-            fill(10, 102, 194); // LinkedIn blue
-            rect(canvasWidth / 2, canvasHeight * 0.81, 300 * scaleRatio, 45 * scaleRatio, 25);
-            
-            fill(255);
-            textSize(20 * scaleRatio);
-            text("Share on LinkedIn", canvasWidth / 2, canvasHeight * 0.81);
-            
-            // SECTION 5: RESTART INSTRUCTION
-            // Final separator line - moved down to match new LinkedIn button position
-            stroke(100, 150, 200, 150);
-            strokeWeight(1 * scaleRatio);
-            line(canvasWidth * 0.3, canvasHeight * 0.86, canvasWidth * 0.7, canvasHeight * 0.86);
-            
-            // Restart instruction at bottom - moved down to match new separator position
-            noStroke();
-            fill(255);
-            textSize(16 * scaleRatio);
-            text("Press ENTER to play again", canvasWidth / 2, canvasHeight * 0.91);
-            
-            // Draw some celebratory fireworks for the win screen
-            if (random(1) < 0.05) { // 5% chance each frame to create a new firework
-                createFirework();
-            }
-            updateFireworks();
-        } 
-        else if (gameState === "lost") {
-            // Display lose message
-            fill(255);
-            textSize(36 * scaleRatio);
-            text("Game Over", canvasWidth / 2, canvasHeight / 2 - 40 * scaleRatio);
-            
-            // Display final score
-            textSize(30 * scaleRatio);
-            text("Final Score: " + score, canvasWidth / 2, canvasHeight / 2 + 10 * scaleRatio);
-            
-            textSize(24 * scaleRatio);
-            text("Press ENTER to try again", canvasWidth / 2, canvasHeight / 2 + 60 * scaleRatio);
-            
-            // Removed email collection from the lost state per user request
-            // Only collecting emails when player wins the game
+            drawWinScreen();
         }
-
-        // Draw debug information
-        drawDebug();
         
-        // Update and draw explosion particles
-        for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.alpha *= p.decay;
-            
-            if (p.glow) {
-                // Draw glowing particles
-                noStroke();
-                // Outer glow
-                for (let j = 5; j > 0; j--) {
-                    fill(p.color[0], p.color[1], p.color[2], p.alpha * 0.2);
-                    ellipse(p.x, p.y, p.size + j * 3, p.size + j * 3);
-                }
-                // Inner particle
-                fill(p.color[0], p.color[1], p.color[2], p.alpha);
-                ellipse(p.x, p.y, p.size, p.size);
-            } else {
-                // Regular particles
-                fill(p.color[0], p.color[1], p.color[2], p.alpha);
-                ellipse(p.x, p.y, p.size, p.size);
-            }
-            
-            if (p.alpha < 5) {
-                particles.splice(i, 1);
-            }
+        // Debug overlay if debug mode is enabled
+        if (debugMode) {
+            fill(255);
+            textSize(12 * scaleRatio);
+            textAlign(LEFT, TOP);
+            text("FPS: " + Math.floor(frameRate()), 10, canvasHeight - 60);
+            text("Game State: " + gameState, 10, canvasHeight - 45);
+            text("APIs: " + apis.length + ", Asteroids: " + asteroids.length + ", Bullets: " + bullets.length, 10, canvasHeight - 30);
+            text("Device: " + (isMobileDevice ? "Mobile" : "Desktop") + ", Scale: " + scaleRatio.toFixed(2), 10, canvasHeight - 15);
         }
-
-        // Draw text particles
-        for (let i = textParticles.length - 1; i >= 0; i--) {
-            let tp = textParticles[i];
-            tp.y += tp.vy;
-            tp.lifespan--;
-            tp.alpha = map(tp.lifespan, 0, 60, 0, 255);
-            
-            // Draw glowing text
-            textSize(tp.size);
-            textAlign(CENTER, CENTER);
-            
-            if (tp.color) {
-                // Use custom color if provided
-                // Glow effect
-                fill(tp.color[0], tp.color[1], tp.color[2], tp.alpha * 0.5);
-                text(tp.text, tp.x + 1, tp.y + 1);
-                
-                // Main text
-                fill(tp.color[0], tp.color[1], tp.color[2], tp.alpha);
-                text(tp.text, tp.x, tp.y);
-            } else {
-                // Default glow effect
-                fill(30, 100, 255, tp.alpha * 0.5);
-                text(tp.text, tp.x + 1, tp.y + 1);
-                
-                // Main text
-                fill(255, 255, 255, tp.alpha);
-                text(tp.text, tp.x, tp.y);
-            }
-            
-            if (tp.lifespan <= 0) {
-                textParticles.splice(i, 1);
-            }
-        }
-
-        // Display flash message
-        if (flashTimer > 0) {
-            flashTimer--;
-            textSize(24 * scaleRatio);
-            textAlign(CENTER);
-            
-            // Glow effect
-            fill(flashColor[0], flashColor[1], flashColor[2], min(flashTimer * 3, 100));
-            text(flashMessage, canvasWidth/2 + 2 * scaleRatio, 100 * scaleRatio + 2 * scaleRatio);
-            
-            // Main text
-            fill(255, 255, 255, min(flashTimer * 3, 255));
-            text(flashMessage, canvasWidth/2, 100 * scaleRatio);
-        }
-
-        // Draw the email collection form
-        drawEmailCollectionForm();
+    } catch (e) {
+        // Error recovery
+        console.error("Error in draw loop:", e);
+        text("Error: " + e.message, canvasWidth/2, canvasHeight/2);
+        text("Press ENTER to restart", canvasWidth/2, canvasHeight/2 + 30);
         
-        // Update cursor blink for email input if active
-        if ((gameState === "won" && emailInputActive) || (showEmailCollection && emailInputActive)) {
-            emailCursorTimer++;
-            if (emailCursorTimer > 30) {
-                emailCursorVisible = !emailCursorVisible;
-                emailCursorTimer = 0;
-            }
-        }
-    } catch (error) {
-        // Recover from any rendering errors
-        console.error("Error in draw function:", error);
-        
-        // Basic recovery - clear the screen and show an error message
-        background(0);
-        fill(255, 0, 0);
-        textAlign(CENTER, CENTER);
-        textSize(20);
-        text("An error occurred. Press ENTER to restart.", canvasWidth/2, canvasHeight/2);
-        
-        // Allow the game to recover by pressing ENTER
         if (keyIsDown(ENTER)) {
             resetGame();
         }
@@ -743,36 +431,36 @@ function draw() {
 
 // Handle player movement from keyboard or touch
 function handlePlayerMovement() {
-    // Keyboard controls for desktop - use keyIsDown for more reliable input detection
-    if (keyIsDown(LEFT_ARROW)) {
-        spaceship.x -= spaceship.speed;
-    }
-    if (keyIsDown(RIGHT_ARROW)) {
-        spaceship.x += spaceship.speed;
-    }
+    // Default speed
+    let moveSpeed = 5 * scaleRatio;
     
-    // Space key for shooting on desktop
-    if (keyIsDown(32) && bulletCooldown <= 0) { // 32 is space key
-        shootBullet();
-    }
-    
-    // Touch controls for mobile
-    if (isMobile) {
-        if (touchZones.left.active) {
-            spaceship.x -= spaceship.speed;
+    // For desktop: keyboard controls
+    if (!isMobileDevice) {
+        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) { // Left arrow or 'A'
+            spaceship.x -= moveSpeed;
         }
-        if (touchZones.right.active) {
-            spaceship.x += spaceship.speed;
+        if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) { // Right arrow or 'D'
+            spaceship.x += moveSpeed;
         }
         
-        // Auto-shoot with a cooldown on mobile
-        if (touchZones.shoot.active && bulletCooldown <= 0) {
-            shootBullet();
+        // Shooting with spacebar
+        if (keyIsDown(32) && bulletCooldown <= 0) { // Spacebar
+            shoot();
+            bulletCooldown = bulletCooldownTime;
+        }
+    }
+    // For mobile: touch controls are handled in checkTouchZones()
+    else {
+        if (leftZoneActive) {
+            spaceship.x -= moveSpeed;
+        }
+        if (rightZoneActive) {
+            spaceship.x += moveSpeed;
         }
     }
     
-    // Keep the spaceship within the canvas
-    spaceship.x = constrain(spaceship.x, spaceship.w / 2, canvasWidth - spaceship.w / 2);
+    // Keep the spaceship within the canvas bounds
+    spaceship.x = constrain(spaceship.x, spaceship.width/2, canvasWidth - spaceship.width/2);
 }
 
 // Draw touch controls on mobile
@@ -827,63 +515,46 @@ function drawTouchControls() {
 }
 
 // Shoot bullets function
-function shootBullet() {
-    // Create a single bullet from the center of the spaceship
-    let bullet = { 
-        x: spaceship.x, 
-        y: spaceship.y - 20 * scaleRatio, 
-        w: 4 * scaleRatio,  // Slightly wider for better visibility
-        h: 12 * scaleRatio  // Slightly longer
+function shoot() {
+    // Create a new bullet
+    let bullet = {
+        x: spaceship.x,
+        y: spaceship.y - 20 * scaleRatio,
+        width: 8 * scaleRatio,
+        height: 16 * scaleRatio,
+        speed: 10
     };
     
+    // Add the bullet to the array
     bullets.push(bullet);
-    bulletCooldown = 10; // Limit firing rate
+    
+    // Play sound if available
+    if (shootSound && !isMuted) {
+        shootSound.play();
+    }
 }
 
 // Touch event handlers
 function touchStarted() {
-    if (!isMobile) return true; // Allow normal events on desktop
-    
-    console.log("Touch started at", touches[0]?.x, touches[0]?.y, "Game state:", gameState);
-    
-    // Handle splash screen - tap anywhere to continue
+    // For splash screen
     if (gameState === "splash") {
-        if (millis() > splashTimeout / 2) { // Allow skipping after half the splash time
-            gameState = "about";
-            return false;
-        }
+        gameState = "playing";
+        return false;
     }
     
-    // Handle about screen - handle touch for starting the game
-    if (gameState === "about") {
-        // Start game button
-        let titleY = 110 * scaleRatio + (24 * scaleRatio * 11);
-        let startY = titleY + (24 * scaleRatio * 3) + (24 * scaleRatio * 3);
-        let startW = 200 * scaleRatio;
-        let startH = 50 * scaleRatio;
-        
-        if (touches[0]?.x > canvasWidth/2 - startW/2 && 
-            touches[0]?.x < canvasWidth/2 + startW/2 &&
-            touches[0]?.y > startY - startH/2 && 
-            touches[0]?.y < startY + startH/2) {
-            
-            gameState = "playing";
-            gameStartTime = millis();
-            playerName = inputName;
-            if (playerName === "") {
-                playerName = "HR Professional";
-            }
-            return false;
-        }
+    // For game over screen
+    if (gameState === "gameover" && canRestart) {
+        resetGame();
+        return false;
     }
     
-    // If game is in playing state, check for touch zones
-    if (gameState === "playing") {
-        checkTouchZones();
+    // For win screen
+    if (gameState === "won") {
+        resetGame();
+        return false;
     }
     
-    // Prevent default to avoid browser gestures
-    return false;
+    return true;
 }
 
 function touchMoved() {
@@ -1107,160 +778,109 @@ function touchEnded() {
 
 // Check which touch zones are being activated
 function checkTouchZones() {
-    // Only process if in playing state
+    // Only process if in the playing state
     if (gameState !== "playing") return;
     
-    // Reset touch zones
-    touchZones.left.active = false;
-    touchZones.right.active = false;
-    touchZones.shoot.active = false;
+    // Reset active states
+    leftZoneActive = false;
+    rightZoneActive = false;
+    shootZoneActive = false;
     
-    // Debug touch points
+    // Debug output
     if (debugMode && touches.length > 0) {
-        console.log("Checking touches:", touches.length, "Touch points at", 
-                   touches.map(t => `(${Math.round(t.x)},${Math.round(t.y)})`).join(', '));
+        console.log("Touches:", touches.length, "Touch points:", touches);
     }
     
     // Check each touch point
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
-        // Check left zone - use an actual rectangle hitbox rather than just x position
-        if (touch.x < canvasWidth / 3 && 
-            touch.y > canvasHeight * 0.4) { // Only bottom portion of screen
-            touchZones.left.active = true;
-            if (debugMode) console.log("Left zone activated");
+        // Convert touch coordinates to canvas coordinates if needed
+        let touchX = touch.x;
+        let touchY = touch.y;
+        
+        // Left zone check - only bottom portion of left side
+        if (touchX < canvasWidth * 0.33 && touchY > canvasHeight * 0.5) {
+            leftZoneActive = true;
+            
+            if (debugMode) {
+                console.log("Left zone activated");
+            }
         }
         
-        // Check right zone - use an actual rectangle hitbox
-        if (touch.x > canvasWidth * 2/3 && 
-            touch.y > canvasHeight * 0.4) { // Only bottom portion of screen
-            touchZones.right.active = true;
-            if (debugMode) console.log("Right zone activated");
+        // Right zone check - only bottom portion of right side
+        if (touchX > canvasWidth * 0.67 && touchY > canvasHeight * 0.5) {
+            rightZoneActive = true;
+            
+            if (debugMode) {
+                console.log("Right zone activated");
+            }
         }
         
-        // Check shoot button - use proper distance calculation
-        let shootDist = dist(touch.x, touch.y, touchZones.shoot.x, touchZones.shoot.y);
-        if (shootDist < touchZones.shoot.radius) {
-            touchZones.shoot.active = true;
-            if (debugMode) console.log("Shoot button activated");
+        // Shoot zone check - distance-based for the center button
+        let d = dist(touchX, touchY, shootZone.x, shootZone.y);
+        if (d < shootZone.radius) {
+            shootZoneActive = true;
+            
+            if (debugMode) {
+                console.log("Shoot zone activated");
+            }
+            
+            // Force a bullet shot if cooldown allows
+            if (bulletCooldown <= 0) {
+                shoot();
+                bulletCooldown = bulletCooldownTime;
+            }
         }
-    }
-    
-    // Force a bullet shot if shoot is active and cooldown allows
-    if (touchZones.shoot.active && bulletCooldown <= 0) {
-        shootBullet();
     }
 }
 
 // Add a new keyPressed function to handle shooting more reliably
 function keyPressed() {
-    // Debug logging
-    console.log("keyPressed - keyCode:", keyCode, "key:", key, "gameState:", gameState, "emailInputActive:", emailInputActive);
+    console.log("Key pressed:", keyCode, key);
     
-    // Handle integrated email form in won screen
-    if (gameState === "won" && !emailSubmitted) {
-        if (emailInputActive) {
-            // Special keys for email field
-            if (keyCode === BACKSPACE) {
-                emailInput = emailInput.slice(0, -1);
-                return false;
-            } 
-            else if (keyCode === ENTER) {
-                if (!emailSubmitting) {
-                    submitEmailToSupabase();
-                }
-                return false;
-            }
-            else if (keyCode === TAB) {
-                emailInputActive = false;
-                return false;
-            }
-            else if (keyCode === ESCAPE) {
-                emailInputActive = false;
-                return false;
-            }
-            // Let other keys through to keyTyped
-            return true;
+    // Debug toggle
+    if (key === 'd' || key === 'D') {
+        debugMode = !debugMode;
+        console.log("Debug mode:", debugMode);
+        return false;
+    }
+    
+    // Add state transitions
+    if (gameState === "splash") {
+        if (keyCode === 32 || keyCode === ENTER) { // Space or Enter
+            console.log("Transitioning from splash to playing");
+            gameState = "playing";
+            return false;
         }
-        
-        // Allow ENTER to restart the game
+    } 
+    else if (gameState === "gameover") {
+        if ((keyCode === 32 || keyCode === ENTER) && canRestart) { // Space or Enter when restart allowed
+            console.log("Restarting game from game over");
+            resetGame();
+            return false;
+        }
+    }
+    else if (gameState === "playing") {
+        if (keyCode === ESCAPE) {
+            gameState = "paused";
+            return false;
+        }
+    }
+    else if (gameState === "paused") {
+        if (keyCode === ESCAPE) {
+            gameState = "playing";
+            return false;
+        }
+    }
+    else if (gameState === "won") {
         if (keyCode === ENTER) {
+            console.log("Restarting game from win screen");
             resetGame();
             return false;
         }
     }
     
-    // Handle email input for modal form
-    if (showEmailCollection) {
-        if (keyCode === ESCAPE) {
-            console.log("Escape key pressed, hiding email form");
-            showEmailCollection = false;
-            emailInputActive = false;
-            return false;
-        }
-        
-        if (emailInputActive) {
-            if (keyCode === BACKSPACE) {
-                emailInput = emailInput.slice(0, -1);
-                return false;
-            } 
-            else if (keyCode === ENTER) {
-                if (!emailSubmitting) {
-                    submitEmailToSupabase();
-                }
-                return false;
-            }
-            else if (keyCode === TAB) {
-                emailInputActive = false;
-                return false;
-            }
-            // Let other keys through to keyTyped
-            return true;
-        }
-        
-        return false; // Block other keys while email form is shown but input not active
-    }
-    
-    // Handle name input when customizing
-    if (gameState === "about" && customizeNameMode) {
-        if (keyCode === BACKSPACE) {
-            inputName = inputName.slice(0, -1);
-            return false;
-        }
-        else if (keyCode === ENTER || keyCode === ESCAPE) {
-            customizeNameMode = false;
-            return false;
-        }
-        return true; // Let regular keys through to keyTyped
-    }
-    
-    // Level completion keys
-    if (gameState === "levelCompleted") {
-        // Any key press advances to the next level
-        currentLevel++;
-        if (currentLevel >= levels.length) {
-            gameState = "won";
-        } else {
-            gameState = "playing";
-        }
-        return false;
-    }
-    
-    // Game restart
-    if (keyCode === ENTER && (gameState === "lost" || gameState === "won")) {
-        showEmailCollection = false;
-        resetGame();
-        return false;
-    }
-    
-    // Debug mode toggle
-    if (key === 'd' || key === 'D') {
-        toggleDebug();
-        return false;
-    }
-    
-    // Let through gameplay keys by default
     return true;
 }
 
@@ -1315,35 +935,42 @@ function keyTyped() {
 
 // Function to reset the game
 function resetGame() {
-    currentLevel = 0;
-    if (gameState === "splash") {
-        // Skip the splash screen on restart
-        gameState = "playing";
-    } else {
-        gameState = "playing";
-    }
+    // Reset game state
+    gameState = "playing";
+    
+    // Reset scores and counters
+    score = 0;
+    correctAPICount = 0;
+    incorrectAPICount = 0;
+    
+    // Clear all arrays
+    bullets = [];
     apis = [];
     asteroids = [];
-    bullets = [];
-    fireworks = [];
-    explosionParticles = []; // Clear explosion particles
-    frameCountAPI = 0;
-    frameCountAsteroid = 0;
-    score = 0; // Reset score when game is reset
     
-    // Reset email collection state
-    showEmailCollection = false;
-    emailInputActive = false;
-    // Don't reset emailSubmitted so we don't ask for email again if they've already provided it
-    
-    // Create the spaceship with dimensions matching the new design and scaled for mobile
+    // Create/reset spaceship
     spaceship = { 
         x: canvasWidth / 2, 
         y: canvasHeight - 50 * scaleRatio, 
-        w: 50 * scaleRatio,      // Width now represents the full wingspan 
-        h: 40 * scaleRatio,      // Height includes from nose to engine
-        speed: 5 * scaleRatio    // Speed scaled for different screen sizes
+        width: 50 * scaleRatio,
+        height: 40 * scaleRatio,
+        speed: 5 * scaleRatio
     };
+    
+    // Reset cooldown
+    bulletCooldown = 0;
+    bulletCooldownTime = 15; // Frames between shots
+    
+    // Reset spawn rates
+    apiSpawnRate = 120; // Frames between API spawns
+    asteroidSpawnRate = 180; // Frames between asteroid spawns
+    
+    // Choose a random target API
+    let apiTypes = ["PayrollAPI", "BenefitsAPI", "TaxAPI", "TimeAPI", "HRServicesAPI", 
+                   "TalentAPI", "RecruitingAPI", "AnalyticsAPI", "IntegrationsAPI", "MobileAPI"];
+    targetAPI = apiTypes[Math.floor(random(apiTypes.length))];
+    
+    console.log("Game reset complete. Target API:", targetAPI);
 }
 
 // Helper function to detect rectangle collisions
@@ -2850,814 +2477,231 @@ function toggleDebug() {
 
 // Update and draw bullets
 function updateAndDrawBullets() {
-    // Update and draw bullets - make them more visible
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        let bullet = bullets[i];
-        bullet.y -= 8; // Move upward faster
-        if (bullet.y < 0) {
-            bullets.splice(i, 1); // Remove if off top of screen
-            continue;
-        }
-        fill(255, 255, 0); // Yellow rectangle instead of white
-        rect(bullet.x, bullet.y, bullet.w, bullet.h);
-    }
-
-    // Check for bullet-API collisions
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        for (let j = apis.length - 1; j >= 0; j--) {
-            if (collideRectRect(bullets[i].x, bullets[i].y, bullets[i].w, bullets[i].h,
-                apis[j].x, apis[j].y, apis[j].w, apis[j].h) && apis[j].state === "normal") {
-                
-                // Remove the bullet
-                bullets.splice(i, 1);
-                
-                if (apis[j].isCorrect) {
-                    // Update the state to correct (green)
-                    apis[j].state = "correct";
-                    apis[j].hitTime = millis();
-                    apis[j].removeDelay = 800; // Show green for 800ms before removing
-                    
-                    // Update score with bonus for correct API
-                    score += 100;
-                    
-                    // Feedback for player
-                    flashMessage = "Strategic API selection! +100";
-                    flashTimer = 90; // Display message longer
-                    flashColor = [50, 255, 50]; // Green text for positive feedback
-                    
-                    // Store score value for explosion text
-                    apis[j].scoreValue = "+100";
-                    apis[j].scoreColor = [50, 255, 50]; // Green
-                } else {
-                    // Update the state to incorrect (red)
-                    apis[j].state = "incorrect";
-                    apis[j].hitTime = millis();
-                    apis[j].removeDelay = 500; // Show red for 500ms before removing
-                    
-                    // Deduct points for incorrect API
-                    score -= 50;
-                    score = max(0, score); // Prevent negative score
-                    
-                    // Feedback for incorrect choice
-                    flashMessage = "Incorrect API implementation! -50";
-                    flashTimer = 60;
-                    flashColor = [255, 50, 50]; // Red text for negative feedback
-                    
-                    // Store score value for explosion text
-                    apis[j].scoreValue = "-50";
-                    apis[j].scoreColor = [255, 50, 50]; // Red
-                }
-                
-                break;
-            }
-        }
-    }
-}
-
-// Draw the player's spaceship
-function drawSpaceship() {
-    push(); // Save the current drawing state
-    translate(spaceship.x, spaceship.y);
-    
-    // Draw engine glow/thrusters
-    noStroke();
-    fill(255, 100, 0, 150); // Orange with transparency
-    // Pulsating engine effect
-    let pulseSize = 2 + sin(frameCount * 0.2) * 1.5;
-    ellipse(-15 * scaleRatio, 15 * scaleRatio, 8 * scaleRatio, (12 + pulseSize) * scaleRatio);
-    ellipse(15 * scaleRatio, 15 * scaleRatio, 8 * scaleRatio, (12 + pulseSize) * scaleRatio);
-    
-    // Main body - sleek futuristic design
-    stroke(100, 100, 100);
-    strokeWeight(1 * scaleRatio);
-    
-    // Ship body - metallic blue-gray gradient
-    fill(120, 140, 180); 
-    beginShape();
-    vertex(0, -25 * scaleRatio); // Nose of the ship
-    vertex(20 * scaleRatio, 0);  // Right corner
-    vertex(25 * scaleRatio, 15 * scaleRatio); // Right bottom corner
-    vertex(10 * scaleRatio, 10 * scaleRatio); // Right inner corner
-    vertex(0, 15 * scaleRatio);  // Bottom middle
-    vertex(-10 * scaleRatio, 10 * scaleRatio); // Left inner corner
-    vertex(-25 * scaleRatio, 15 * scaleRatio); // Left bottom corner
-    vertex(-20 * scaleRatio, 0);  // Left corner
-    endShape(CLOSE);
-    
-    // Cockpit
-    fill(200, 230, 255, 200); // Light blue transparent
-    ellipse(0, -5 * scaleRatio, 15 * scaleRatio, 20 * scaleRatio);
-    
-    // Wings
-    fill(80, 80, 100);
-    rect(-23 * scaleRatio, 5 * scaleRatio, 10 * scaleRatio, 5 * scaleRatio);
-    rect(23 * scaleRatio, 5 * scaleRatio, 10 * scaleRatio, 5 * scaleRatio);
-    
-    // Single weapon mount in center
-    fill(100);
-    rect(0, -5 * scaleRatio, 10 * scaleRatio, 5 * scaleRatio);
-    
-    // Single weapon barrel
-    fill(255, 255, 0); // Yellow 
-    rect(0, -12 * scaleRatio, 4 * scaleRatio, 12 * scaleRatio);
-    
-    // Engine details
-    fill(50);
-    rect(-15 * scaleRatio, 12 * scaleRatio, 8 * scaleRatio, 6 * scaleRatio);
-    rect(15 * scaleRatio, 12 * scaleRatio, 8 * scaleRatio, 6 * scaleRatio);
-    
-    // Highlight
-    stroke(255, 255, 255, 100);
-    strokeWeight(1 * scaleRatio);
-    line(-10 * scaleRatio, -15 * scaleRatio, 10 * scaleRatio, -15 * scaleRatio);
-    
-    pop(); // Restore the original drawing state
-}
-
-// Draw an API bubble
-function drawAPIBubble(x, y, width, height, apiType, state) {
-    push();
-    translate(x, y);
-    
-    // Static rotation for simplicity
-    let rotation = frameCount * 0.005;
-    rotate(rotation);
-    
-    // Different colors based on state
-    let bubbleColors;
-    
-    if (state === "normal") {
-        // Default blue bubble color
-        bubbleColors = {
-            outer: [30, 100, 220],
-            inner: [40, 120, 230],
-            fill: [50, 130, 240],
-            text: [255, 255, 255],
-            highlight: [255, 255, 255]
-        };
-    } 
-    else if (state === "correct") {
-        // Green for correct
-        bubbleColors = {
-            outer: [30, 200, 30],
-            inner: [40, 230, 40],
-            fill: [50, 255, 50],
-            text: [255, 255, 255],
-            highlight: [200, 255, 200]
-        };
-    } 
-    else if (state === "incorrect") {
-        // Red for incorrect
-        bubbleColors = {
-            outer: [200, 30, 30],
-            inner: [230, 40, 40],
-            fill: [255, 50, 50],
-            text: [255, 255, 255],
-            highlight: [255, 200, 200]
-        };
-    }
-    
-    // Draw outer glow
-    noStroke();
-    for (let i = 8; i > 0; i--) {
-        let alpha = map(i, 0, 8, 40, 0);
-        fill(bubbleColors.outer[0], bubbleColors.outer[1], bubbleColors.outer[2], alpha);
-        let size = width * 2 + i * 3 * scaleRatio;
-        ellipse(0, 0, size, size);
-    }
-    
-    // Draw bubble with pulsating effect
-    let pulse = (frameCount * 0.04) % TWO_PI;
-    let pulseSize = sin(pulse) * 8 * scaleRatio;
-    
-    // Inner glow
-    fill(bubbleColors.inner[0], bubbleColors.inner[1], bubbleColors.inner[2], 150);
-    ellipse(0, 0, width * 2 + pulseSize, width * 2 + pulseSize);
-    
-    // Bubble fill
-    fill(bubbleColors.fill[0], bubbleColors.fill[1], bubbleColors.fill[2], 200);
-    ellipse(0, 0, width * 2, width * 2);
-    
-    // Highlight
-    noFill();
-    stroke(bubbleColors.highlight[0], bubbleColors.highlight[1], bubbleColors.highlight[2], 150);
-    strokeWeight(2 * scaleRatio);
-    arc(0, 0, width * 1.4, width * 1.4, PI * 0.7, PI * 1.4);
-    
-    // Format API text for better display
-    let displayText = formatAPIText(apiType);
-    
-    // Text with glow effect
-    noStroke();
-    
-    // Adjust text size based on API string length
-    let textSizeValue = 12 * scaleRatio;
-    if (apiType.length > 12) {
-        textSizeValue = 10 * scaleRatio; // Smaller text for longer API names
-    }
-    
-    // Text glow
-    fill(bubbleColors.text[0], bubbleColors.text[1], bubbleColors.text[2], 150);
-    textSize(textSizeValue + 1);
-    text(displayText, 0, 0);
-    
-    // Actual text
-    fill(255);
-    textSize(textSizeValue);
-    text(displayText, 0, 0);
-    
-    pop();
-}
-
-// Draw alien ship (asteroid)
-function drawAlienShip(x, y, width, height) {
-    push();
-    translate(x, y);
-    
-    // Simple rotation for alien ships
-    let rotation = 0;
-    rotate(rotation);
-    
-    // Thruster animation
-    let thrusterPulse = (frameCount * 0.1) % TWO_PI;
-    let pulseSize = sin(thrusterPulse) * 2;
-    
-    // CLASSIC ALIEN INVADER SPACESHIP DESIGN
-    
-    // Main saucer body
-    fill(70, 70, 90);
-    stroke(40, 40, 50);
-    strokeWeight(2 * scaleRatio);
-    ellipse(0, 0, width, height * 0.5); // Flattened ellipse for classic saucer shape
-    
-    // Cockpit dome
-    fill(90, 200, 255, 150 + pulseSize * 20);
-    stroke(40, 120, 180);
-    strokeWeight(1.5 * scaleRatio);
-    ellipse(0, -height * 0.1, width * 0.4, height * 0.3);
-    
-    // Alien silhouette inside cockpit
-    fill(30, 255, 30);
-    noStroke();
-    // Alien head
-    ellipse(0, -height * 0.1, width * 0.2, height * 0.15);
-    // Alien eyes
-    fill(255, 0, 0);
-    ellipse(-width * 0.06, -height * 0.12, width * 0.05, height * 0.05);
-    ellipse(width * 0.06, -height * 0.12, width * 0.05, height * 0.05);
-    
-    // Bottom section with lights
-    fill(50, 50, 70);
-    stroke(30, 30, 40);
-    strokeWeight(1 * scaleRatio);
-    arc(0, 0, width, height * 0.5, 0, PI, CHORD);
-    
-    // Bottom lights - pulsating in sequence
-    noStroke();
-    for (let i = 0; i < 7; i++) {
-        let phase = (frameCount * 0.1 + i * 0.4) % TWO_PI;
-        let brightnessPulse = sin(phase) * 120 + 135;
-        
-        fill(255, brightnessPulse, brightnessPulse);
-        let xPos = map(i, 0, 6, -width * 0.35, width * 0.35);
-        ellipse(xPos, height * 0.1, width * 0.08, height * 0.08);
-    }
-    
-    // Death ray effect - occasionally fires downward
-    if (random() < 0.02) {
-        noStroke();
-        fill(255, 50, 50, 150);
-        beginShape();
-        vertex(-width * 0.1, height * 0.15);
-        vertex(width * 0.1, height * 0.15);
-        vertex(width * 0.2, height * 0.4);
-        vertex(-width * 0.2, height * 0.4);
-        endShape(CLOSE);
-    }
-    
-    // Top antenna
-    stroke(100, 100, 120);
-    strokeWeight(2 * scaleRatio);
-    line(0, -height * 0.2, 0, -height * 0.35);
-    
-    // Antenna beacon - blinking
-    noStroke();
-    if (frameCount % 30 < 15) {
-        fill(255, 0, 0, 200); // Red beacon
-    } else {
-        fill(255, 200, 0, 200); // Yellow beacon
-    }
-    ellipse(0, -height * 0.35, width * 0.08, height * 0.08);
-    
-    // Engine glow
-    noStroke();
-    fill(100, 200, 255, 100 + pulseSize * 30);
-    ellipse(0, height * 0.05, width * 0.6, height * 0.15);
-    
-    pop();
-}
-
-// Helper function to format API text for display
-function formatAPIText(apiText) {
-    // Break the API into lines if it's too long
-    if (apiText.length > 15) {
-        // Look for uppercase letters or underscores as natural break points
-        let breakPoint = -1;
-        
-        // Find a good break point around the middle of the string
-        for (let i = Math.floor(apiText.length / 2) - 3; i < Math.floor(apiText.length / 2) + 3; i++) {
-            if (i > 0 && (apiText[i].toUpperCase() === apiText[i] || apiText[i] === '_')) {
-                breakPoint = i;
-                break;
-            }
-        }
-        
-        // If we found a breakpoint, insert a newline
-        if (breakPoint !== -1) {
-            return apiText.substring(0, breakPoint) + '\n' + apiText.substring(breakPoint);
-        }
-    }
-    
-    // Return the original text if no formatting is needed
-    return apiText;
-}
-
-// Draw the splash screen with the title and instructions
-function drawSplashScreen() {
-    // Background with stars
-    drawStarryBackground();
-    
-    // Draw title
-    fill(255);
-    textSize(36 * scaleRatio);
-    textAlign(CENTER, CENTER);
-    text("API Hunter", canvasWidth / 2, canvasHeight / 3);
-
-    // Draw spacecraft
-    drawSpaceship();
-    
-    // Draw instruction
-    fill(255);
-    textSize(18 * scaleRatio);
-    text("Press SPACE or TAP to start", canvasWidth / 2, canvasHeight * 0.6);
-    
-    // Version info
-    textSize(10 * scaleRatio);
-    text("v1.0 - ADP MARKETPLACE", canvasWidth / 2, canvasHeight - 20 * scaleRatio);
-}
-
-// Draw the starry background
-function drawStarryBackground() {
-    // Draw a gradient background from dark blue to black
-    for (let i = 0; i < canvasHeight; i++) {
-        let inter = map(i, 0, canvasHeight, 0, 1);
-        let c = lerpColor(color(0, 0, 30), color(0, 0, 0), inter);
-        stroke(c);
-        line(0, i, canvasWidth, i);
-    }
-    
-    // Draw stars
-    for (let i = 0; i < stars.length; i++) {
-        let star = stars[i];
-        
-        // Twinkling effect
-        let twinkle = noise(star.x, star.y, frameCount * 0.01) * 255;
-        fill(255, 255, 255, twinkle);
-        noStroke();
-        
-        // Draw star with random size based on brightness
-        let size = map(twinkle, 0, 255, 1, 3) * scaleRatio;
-        ellipse(star.x, star.y, size, size);
-        
-        // Move stars slightly for parallax effect
-        if (gameState === "playing") {
-            star.y += star.speed * scaleRatio;
-            
-            // Reset stars when they go off screen
-            if (star.y > canvasHeight) {
-                star.y = 0;
-                star.x = random(0, canvasWidth);
-            }
-        }
-    }
-}
-
-// Function to draw the game elements during the playing state
-function drawGameElements() {
-    // Draw a starry background first
-    drawStarryBackground();
-    
-    // Draw and update player's spaceship
-    drawSpaceship();
-    
-    // Draw and update bullets
-    updateAndDrawBullets();
-    
-    // Draw and update APIs
-    for (let i = apis.length - 1; i >= 0; i--) {
-        let api = apis[i];
-        
-        // Update API position
-        api.y += api.speed * scaleRatio;
-        
-        // Check if API is off screen
-        if (api.y > canvasHeight + 50) {
-            // Remove the API
-            apis.splice(i, 1);
-            
-            // Penalize missing an API
-            if (api.state === "normal") {
-                score -= 1;
-                score = max(0, score); // Prevent negative score
-            }
-            
-            continue;
-        }
-        
-        // Draw the API bubble with appropriate state
-        drawAPIBubble(api.x, api.y, api.width, api.height, api.type, api.state);
-    }
-    
-    // Draw and update asteroids (alien ships)
-    for (let i = asteroids.length - 1; i >= 0; i--) {
-        let asteroid = asteroids[i];
-        
-        // Update asteroid position
-        asteroid.y += asteroid.speed * scaleRatio;
-        
-        // Check if asteroid is off screen
-        if (asteroid.y > canvasHeight + 100) {
-            // Remove the asteroid
-            asteroids.splice(i, 1);
-            continue;
-        }
-        
-        // Draw the asteroid (alien ship)
-        drawAlienShip(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
-        
-        // Check collision with spaceship
-        let d = dist(spaceship.x, spaceship.y, asteroid.x, asteroid.y);
-        if (d < (spaceship.width / 2 + asteroid.width / 2) * 0.7) {
-            // Collision with spaceship - player loses
-            gameState = "gameover";
-            // Store when the game over state started
-            gameOverStartTime = millis();
-        }
-    }
-    
-    // Spawn new APIs periodically
-    if (frameCount % apiSpawnRate === 0) {
-        spawnAPI();
-    }
-    
-    // Spawn new asteroids periodically
-    if (frameCount % asteroidSpawnRate === 0) {
-        spawnAsteroid();
-    }
-    
-    // Draw score
-    fill(255);
-    textSize(16 * scaleRatio);
-    textAlign(LEFT, TOP);
-    text("Score: " + score, 20 * scaleRatio, 20 * scaleRatio);
-    
-    // Draw correct and incorrect counts
-    textSize(12 * scaleRatio);
-    text("Correct: " + correctAPICount, 20 * scaleRatio, 50 * scaleRatio);
-    text("Incorrect: " + incorrectAPICount, 20 * scaleRatio, 70 * scaleRatio);
-    
-    // Draw API count to win
-    textAlign(RIGHT, TOP);
-    text("APIs to win: " + (targetAPICount - correctAPICount), canvasWidth - 20 * scaleRatio, 20 * scaleRatio);
-    
-    // Check win condition
-    if (correctAPICount >= targetAPICount) {
-        gameState = "won";
-        winTime = millis();
-    }
-}
-
-// Function to update and draw bullets
-function updateAndDrawBullets() {
     for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
         
         // Update bullet position
         bullet.y -= bullet.speed * scaleRatio;
         
-        // Check if bullet is off screen
-        if (bullet.y < -10) {
+        // Draw the bullet
+        fill(255, 255, 0); // Yellow bullets for better visibility
+        noStroke();
+        rect(bullet.x, bullet.y, bullet.width, bullet.height, 2);
+        
+        // Remove if off-screen
+        if (bullet.y < -50) {
             bullets.splice(i, 1);
             continue;
         }
         
-        // Draw the bullet with glow effect
-        push();
-        translate(bullet.x, bullet.y);
-        
-        // Glow effect
-        noStroke();
-        for (let j = 5; j > 0; j--) {
-            let alpha = map(j, 0, 5, 0, 200);
-            fill(255, 255, 0, alpha); // Yellow glow
-            ellipse(0, 0, bullet.width + j * 4 * scaleRatio, bullet.height * 1.5);
-        }
-        
-        // Main bullet
-        fill(255, 255, 0); // Yellow
-        ellipse(0, 0, bullet.width, bullet.height);
-        
-        // Highlight
-        fill(255);
-        ellipse(0, 0, bullet.width * 0.5, bullet.height * 0.5);
-        
-        pop();
-        
         // Check collision with APIs
-        for (let j = 0; j < apis.length; j++) {
+        for (let j = apis.length - 1; j >= 0; j--) {
             let api = apis[j];
             let d = dist(bullet.x, bullet.y, api.x, api.y);
             
-            // Adjust collision detection based on API visualization
-            if (d < (bullet.width / 2 + api.width)) {
-                // Collision detected
+            // If collision detected
+            if (d < (bullet.width/2 + api.width/2) * 0.7) {
+                // Remove bullet
                 bullets.splice(i, 1);
                 
-                // Determine if the API is correct or incorrect based on the target
+                // Check if this is the correct API type
                 if (api.type === targetAPI) {
+                    // Mark as correct hit
                     api.state = "correct";
-                    correctAPICount++;
                     score += 5;
+                    correctAPICount++;
                 } else {
+                    // Mark as incorrect hit
                     api.state = "incorrect";
-                    incorrectAPICount++;
                     score -= 2;
+                    incorrectAPICount++;
                     score = max(0, score); // Prevent negative score
                 }
                 
-                // Set animation timer for APIs to fade out
-                api.fadeStartTime = millis();
-                api.fadeTime = 1000; // 1 second to fade out
-                
-                // Break out of the APIs loop since this bullet has been removed
-                break;
+                break; // Exit the inner loop since bullet is gone
             }
         }
     }
 }
 
-// Game over screen
-function drawGameOverScreen() {
-    // Draw background with stars
+// Function to draw API bubble
+function drawAPIBubble(x, y, width, height, type, state) {
+    push();
+    if (state === "normal") {
+        // Normal API
+        fill(255, 0, 0, 200);
+        stroke(255, 150, 150);
+    } else if (state === "correct") {
+        // Correct API hit
+        fill(0, 255, 0, 200);
+        stroke(150, 255, 150);
+    } else if (state === "incorrect") {
+        // Incorrect API hit
+        fill(100, 100, 255, 200);
+        stroke(150, 150, 255);
+    }
+    
+    strokeWeight(2 * scaleRatio);
+    ellipse(x, y, width, height);
+    
+    // Draw API text
+    fill(255);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(14 * scaleRatio);
+    text(type, x, y);
+    pop();
+}
+
+// Function to spawn new API
+function spawnAPI() {
+    // List of possible API types
+    let apiTypes = ["PayrollAPI", "BenefitsAPI", "TaxAPI", "TimeAPI", "HRServicesAPI", 
+                   "TalentAPI", "RecruitingAPI", "AnalyticsAPI", "IntegrationsAPI", "MobileAPI"];
+    
+    // Randomly select an API type
+    let type;
+    if (random(1) < 0.3) {
+        // 30% chance to spawn the target API
+        type = targetAPI;
+    } else {
+        // Otherwise pick a different API
+        let otherTypes = apiTypes.filter(t => t !== targetAPI);
+        type = random(otherTypes);
+    }
+    
+    // Create a new API object
+    let api = {
+        x: random(50, canvasWidth - 50),
+        y: -50, // Start above the visible area
+        width: 80 * scaleRatio,
+        height: 80 * scaleRatio,
+        type: type,
+        state: "normal",
+        speed: random(1, 3)
+    };
+    
+    // Add to the apis array
+    apis.push(api);
+}
+
+// Function to spawn a new asteroid
+function spawnAsteroid() {
+    let asteroid = {
+        x: random(50, canvasWidth - 50),
+        y: -50, // Start above the visible area
+        width: 60 * scaleRatio,
+        height: 40 * scaleRatio,
+        speed: random(2, 4)
+    };
+    
+    // Add to the asteroids array
+    asteroids.push(asteroid);
+}
+
+// Function to draw the spaceship
+function drawSpaceship() {
+    push();
+    // Green spaceship
+    fill(0, 255, 0);
+    stroke(100, 255, 100);
+    strokeWeight(2 * scaleRatio);
+    rect(spaceship.x, spaceship.y, spaceship.width, spaceship.height, 5);
+    pop();
+}
+
+// Draw the starry background
+function drawStarryBackground() {
+    background(0);
+    
+    // Simple stars
+    fill(255);
+    noStroke();
+    for (let i = 0; i < 50; i++) {
+        let size = random(1, 3) * scaleRatio;
+        ellipse(random(canvasWidth), random(canvasHeight), size, size);
+    }
+}
+
+// Draw the splash screen
+function drawSplashScreen() {
+    background(0);
+    
+    // Draw stars for background
     drawStarryBackground();
     
-    // Game over text
-    fill(255, 50, 50);
-    textSize(36 * scaleRatio);
+    // Title
+    fill(255);
+    textSize(40 * scaleRatio);
     textAlign(CENTER, CENTER);
-    text("GAME OVER", canvasWidth/2, canvasHeight/3);
+    text("API SPACE GAME", canvasWidth/2, canvasHeight/2 - 60 * scaleRatio);
     
-    // Show final score
+    // Instructions
+    fill(200, 200, 255);
+    textSize(20 * scaleRatio);
+    text("Press SPACE to start", canvasWidth/2, canvasHeight/2 + 20 * scaleRatio);
+    
+    // Desktop controls
+    if (!isMobileDevice) {
+        fill(200, 255, 200);
+        textSize(16 * scaleRatio);
+        text("Use LEFT/RIGHT arrows to move", canvasWidth/2, canvasHeight/2 + 60 * scaleRatio);
+        text("SPACE to shoot", canvasWidth/2, canvasHeight/2 + 90 * scaleRatio);
+    }
+    // Mobile controls
+    else {
+        fill(200, 255, 200);
+        textSize(16 * scaleRatio);
+        text("Touch left/right sides to move", canvasWidth/2, canvasHeight/2 + 60 * scaleRatio);
+        text("Touch middle to shoot", canvasWidth/2, canvasHeight/2 + 90 * scaleRatio);
+    }
+}
+
+// Draw game over screen
+function drawGameOverScreen() {
+    background(0);
+    
+    // Game over message
+    fill(255, 50, 50);
+    textSize(40 * scaleRatio);
+    textAlign(CENTER, CENTER);
+    text("GAME OVER", canvasWidth/2, canvasHeight/2 - 40 * scaleRatio);
+    
+    // Score
     fill(255);
     textSize(24 * scaleRatio);
-    text("Score: " + score, canvasWidth/2, canvasHeight/2);
+    text("Final Score: " + score, canvasWidth/2, canvasHeight/2 + 20 * scaleRatio);
     
-    // Show correct and incorrect counts
+    // Restart instructions
+    if (canRestart) {
+        fill(200, 200, 255);
+        textSize(20 * scaleRatio);
+        text("Press SPACE to play again", canvasWidth/2, canvasHeight/2 + 80 * scaleRatio);
+    }
+}
+
+// Draw win screen
+function drawWinScreen() {
+    background(0, 100, 0);
+    
+    // Win message
+    fill(255, 255, 0);
+    textSize(40 * scaleRatio);
+    textAlign(CENTER, CENTER);
+    text("YOU WON!", canvasWidth/2, canvasHeight/2 - 60 * scaleRatio);
+    
+    // Score
+    fill(255);
+    textSize(24 * scaleRatio);
+    text("Final Score: " + score, canvasWidth/2, canvasHeight/2);
+    
+    // Stats
     textSize(18 * scaleRatio);
     text("Correct APIs: " + correctAPICount, canvasWidth/2, canvasHeight/2 + 40 * scaleRatio);
     text("Incorrect APIs: " + incorrectAPICount, canvasWidth/2, canvasHeight/2 + 70 * scaleRatio);
     
-    // Restart instruction
-    textSize(16 * scaleRatio);
-    text("Press SPACE or TAP to restart", canvasWidth/2, canvasHeight/2 + 120 * scaleRatio);
-    
-    // Show crashed spaceship with flames
-    push();
-    translate(canvasWidth/2, canvasHeight/4);
-    rotate(PI/6); // Tilt the spaceship
-    
-    // Flames
-    noStroke();
-    for (let i = 0; i < 10; i++) {
-        let flameSize = 20 + sin(frameCount * 0.1 + i) * 10;
-        let alpha = map(sin(frameCount * 0.1 + i * 0.5), -1, 1, 100, 200);
-        
-        // Red-orange flames
-        fill(255, 100 + random(100), 0, alpha);
-        ellipse(random(-20, 20) * scaleRatio, 
-                random(10, 30) * scaleRatio, 
-                flameSize * scaleRatio, 
-                flameSize * 1.5 * scaleRatio);
-    }
-    
-    // Broken spaceship - similar to regular but with cracks and damage
-    stroke(100, 100, 100);
-    strokeWeight(1 * scaleRatio);
-    
-    // Ship body - metallic blue-gray gradient but darker
-    fill(80, 100, 140); 
-    beginShape();
-    vertex(0, -25 * scaleRatio); // Nose of the ship
-    vertex(20 * scaleRatio, 0);  // Right corner
-    vertex(25 * scaleRatio, 15 * scaleRatio); // Right bottom corner
-    vertex(10 * scaleRatio, 10 * scaleRatio); // Right inner corner
-    vertex(0, 15 * scaleRatio);  // Bottom middle
-    vertex(-10 * scaleRatio, 10 * scaleRatio); // Left inner corner
-    vertex(-25 * scaleRatio, 15 * scaleRatio); // Left bottom corner
-    vertex(-20 * scaleRatio, 0);  // Left corner
-    endShape(CLOSE);
-    
-    // Damaged cockpit - cracked
-    fill(150, 180, 205, 150); // Light blue transparent but dimmer
-    ellipse(0, -5 * scaleRatio, 15 * scaleRatio, 20 * scaleRatio);
-    
-    // Cracks in the cockpit
-    stroke(255, 255, 255, 150);
-    strokeWeight(0.5 * scaleRatio);
-    line(-5 * scaleRatio, -10 * scaleRatio, 5 * scaleRatio, 0 * scaleRatio);
-    line(5 * scaleRatio, -12 * scaleRatio, -2 * scaleRatio, 0 * scaleRatio);
-    
-    pop();
-}
-
-// Win screen with email form
-function drawWinScreen() {
-    // Draw a celebratory background
-    drawStarryBackground();
-    
-    // Floating APIs in the background (celebratory)
-    drawCelebratoryAPIs();
-
-    // Draw victory text
-    fill(50, 255, 50);
-    textSize(36 * scaleRatio);
-    textAlign(CENTER, CENTER);
-    text("VICTORY!", canvasWidth/2, canvasHeight/4);
-    
-    // Show final score
-    fill(255);
-    textSize(24 * scaleRatio);
-    text("Final Score: " + score, canvasWidth/2, canvasHeight/4 + 50 * scaleRatio);
-    
-    // Draw the integrated email form
-    drawIntegratedEmailForm();
-}
-
-// Draw celebratory floating APIs for the win screen
-function drawCelebratoryAPIs() {
-    for (let i = 0; i < celebrationAPIs.length; i++) {
-        let api = celebrationAPIs[i];
-        
-        // Update position with floating effect
-        api.x += sin(frameCount * 0.05 + i) * 0.5 * scaleRatio;
-        api.y += cos(frameCount * 0.05 + i * 0.7) * 0.5 * scaleRatio;
-        
-        // Draw the API with "correct" state (green)
-        drawAPIBubble(api.x, api.y, api.width, api.height, api.type, "correct");
-    }
-}
-
-// Function to spawn APIs in the game
-function spawnAPI() {
-    // Define a list of API names
-    let apiTypes = [
-        "PayrollAPI", 
-        "BenefitsAPI", 
-        "TaxAPI", 
-        "TimeAPI", 
-        "HRServicesAPI",
-        "TalentAPI",
-        "RecruitingAPI",
-        "AnalyticsAPI",
-        "IntegrationsAPI",
-        "MobileAPI"
-    ];
-    
-    // Select a random API type
-    let apiType = apiTypes[Math.floor(random(apiTypes.length))];
-    
-    // Create a new API object
-    let api = {
-        x: random(canvasWidth * 0.2, canvasWidth * 0.8),
-        y: -50,
-        width: 25 * scaleRatio,  // Base size adjusted by scale ratio
-        height: 25 * scaleRatio,
-        type: apiType,
-        state: "normal",  // Can be "normal", "correct", or "incorrect"
-        speed: random(1, 2)
-    };
-    
-    // Add the API to the array
-    apis.push(api);
-}
-
-// Function to spawn asteroids (alien ships) in the game
-function spawnAsteroid() {
-    // Create a new asteroid object
-    let asteroid = {
-        x: random(canvasWidth * 0.1, canvasWidth * 0.9),
-        y: -100,
-        width: 60 * scaleRatio,  // Base size adjusted by scale ratio
-        height: 40 * scaleRatio,
-        speed: random(1.5, 3)
-    };
-    
-    // Add the asteroid to the array
-    asteroids.push(asteroid);
-}
-
-// Main draw function - called every frame
-function draw() {
-    // Clear the canvas
-    background(0);
-    
-    // Handle different game states
-    if (gameState === "splash") {
-        drawSplashScreen();
-    } 
-    else if (gameState === "about") {
-        drawAboutScreen();
-    }
-    else if (gameState === "playing") {
-        // Process player movement based on key presses or touch controls
-        handlePlayerMovement();
-        
-        // For mobile devices, check touch zones
-        if (isMobileDevice) {
-            checkTouchZones();
-        }
-        
-        // Draw all game elements (player, APIs, bullets, UI)
-        drawGameElements();
-        
-        // Process bullet cooldown
-        if (bulletCooldown > 0) {
-            bulletCooldown--;
-        }
-    } 
-    else if (gameState === "gameover") {
-        drawGameOverScreen();
-        
-        // Check if enough time has passed to allow restart
-        if (millis() - gameOverStartTime > 2000) {
-            canRestart = true;
-        }
-    } 
-    else if (gameState === "won") {
-        drawWinScreen();
-    }
-}
-
-// Function to handle player movement based on key presses or touch zones
-function handlePlayerMovement() {
-    // Default speed
-    let moveSpeed = 5 * scaleRatio;
-    
-    // For desktop: keyboard controls
-    if (!isMobileDevice) {
-        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) { // Left arrow or 'A'
-            spaceship.x -= moveSpeed;
-        }
-        if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) { // Right arrow or 'D'
-            spaceship.x += moveSpeed;
-        }
-        
-        // Shooting with spacebar
-        if (keyIsDown(32) && bulletCooldown <= 0) { // Spacebar
-            shoot();
-            bulletCooldown = bulletCooldownTime;
-        }
-    }
-    // For mobile: touch controls are handled in checkTouchZones()
-    else {
-        if (leftZoneActive) {
-            spaceship.x -= moveSpeed;
-        }
-        if (rightZoneActive) {
-            spaceship.x += moveSpeed;
-        }
-    }
-    
-    // Keep the spaceship within the canvas bounds
-    spaceship.x = constrain(spaceship.x, spaceship.width/2, canvasWidth - spaceship.width/2);
-}
-
-// Function to shoot a bullet
-function shoot() {
-    // Create a new bullet
-    let bullet = {
-        x: spaceship.x,
-        y: spaceship.y - 20 * scaleRatio,
-        width: 8 * scaleRatio,
-        height: 16 * scaleRatio,
-        speed: 10
-    };
-    
-    // Add the bullet to the array
-    bullets.push(bullet);
-    
-    // Play sound if available
-    if (shootSound && !isMuted) {
-        shootSound.play();
-    }
+    // Restart
+    fill(200, 200, 255);
+    textSize(20 * scaleRatio);
+    text("Press ENTER to play again", canvasWidth/2, canvasHeight/2 + 120 * scaleRatio);
 }
