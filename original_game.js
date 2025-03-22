@@ -558,11 +558,10 @@ function drawEmailForm() {
     textSize(16 * scaleRatio);
     textStyle(NORMAL);
     
-    // Position text above the email input - moved down
-    text("To learn more about how ADP's Marketplace APIs", canvasWidth/2, canvasHeight * 0.85);
-    text("can transform your HR experience, please enter your email:", canvasWidth/2, canvasHeight * 0.88);
+    // Condensed text to a single line and positioned clearly above the email input
+    text("Enter your email to learn more about ADP's Marketplace APIs:", canvasWidth/2, canvasHeight * 0.83);
     
-    // Email input box - styled for certificate
+    // Email input box - moved down slightly to ensure separation from text
     fill(255);
     stroke(180, 160, 60);
     strokeWeight(2 * scaleRatio);
