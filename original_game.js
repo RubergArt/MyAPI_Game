@@ -1,6 +1,7 @@
 // ADP API Game - Original Version
 // Based on the original game brief with proper level progression
 // Last updated: March 28, 2025 - Enhanced email input with all valid characters
+// March 29, 2025 - Added restart option after winning
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -441,13 +442,19 @@ function drawEmailForm() {
         text(emailInput, canvasWidth/2, canvasHeight * 0.78);
     }
     
-    // Submit button
+    // Submit button or success message
     if (emailSubmitted) {
         // Show success message
         fill(100, 255, 100);
         noStroke();
         textSize(18 * scaleRatio);
         text("Thank you! Your email has been submitted.", canvasWidth/2, canvasHeight * 0.85);
+        
+        // Add pulsing play again message
+        let pulseAmount = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
+        fill(255, 220, 100);
+        textSize(20 * scaleRatio * pulseAmount);
+        text("Press SPACE or tap screen to play again", canvasWidth/2, canvasHeight * 0.92);
     } else if (emailSubmitting) {
         // Show loading indicator
         fill(150, 150, 255);
@@ -499,6 +506,10 @@ function keyPressed() {
         } else if (gameState === "gameOver" && canRestart) {
             resetGame();
             gameState = "playing";
+        } else if (gameState === "won" && emailSubmitted) {
+            // Start a new game after winning and submitting email
+            resetGame();
+            gameState = "splash";
         }
     }
     
@@ -1087,6 +1098,11 @@ function touchStarted() {
     } else if (gameState === "gameOver" && canRestart) {
         resetGame();
         gameState = "playing";
+        return false;
+    } else if (gameState === "won" && emailSubmitted) {
+        // Start a new game after winning and submitting email
+        resetGame();
+        gameState = "splash";
         return false;
     } else if (gameState === "won") {
         // Check if tapped on email input
