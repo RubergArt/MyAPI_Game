@@ -1,5 +1,6 @@
 // ADP API Game - Original Version
 // Based on the original game brief with proper level progression
+// Last updated: March 26, 2025 - Force cache refresh
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
