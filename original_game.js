@@ -381,8 +381,8 @@ function drawWinScreen() {
     // Draw certificate border
     drawCertificateBorder();
     
-    // Draw decorative seal
-    drawCertificateSeal(canvasWidth/2, canvasHeight * 0.78, 60 * scaleRatio);
+    // Draw decorative seal - moved higher to avoid overlap with email form
+    drawCertificateSeal(canvasWidth/2, canvasHeight * 0.72, 60 * scaleRatio);
     
     // Title
     fill(50, 50, 120);
@@ -396,12 +396,12 @@ function drawWinScreen() {
     strokeWeight(2 * scaleRatio);
     line(canvasWidth * 0.25, canvasHeight * 0.26, canvasWidth * 0.75, canvasHeight * 0.26);
     
-    // Main text
+    // Main text - updated wording
     noStroke();
     fill(40, 40, 80);
     textSize(18 * scaleRatio);
     textStyle(NORMAL);
-    text("This certifies that", canvasWidth/2, canvasHeight * 0.32);
+    text("This certifies that you are an", canvasWidth/2, canvasHeight * 0.32);
     
     // Player designation
     textStyle(ITALIC);
@@ -428,7 +428,7 @@ function drawWinScreen() {
     fill(20, 150, 20);
     text(score + " points", canvasWidth/2, canvasHeight * 0.65);
     
-    // Email collection form
+    // Email collection form - moved down to provide more space from the seal
     drawEmailForm();
     
     // Play again option
@@ -551,32 +551,32 @@ function drawCertificateSeal(x, y, size) {
 }
 
 function drawEmailForm() {
-    // Label with more professional wording
+    // Label with more professional wording - moved down to avoid overlap with seal
     fill(50, 50, 120);
     noStroke();
     textAlign(CENTER, CENTER);
     textSize(16 * scaleRatio);
     textStyle(NORMAL);
     
-    // Position text above the email input
-    text("To learn more about how ADP's Marketplace APIs", canvasWidth/2, canvasHeight * 0.83);
-    text("can transform your HR experience, please enter your email:", canvasWidth/2, canvasHeight * 0.86);
+    // Position text above the email input - moved down
+    text("To learn more about how ADP's Marketplace APIs", canvasWidth/2, canvasHeight * 0.85);
+    text("can transform your HR experience, please enter your email:", canvasWidth/2, canvasHeight * 0.88);
     
     // Email input box - styled for certificate
     fill(255);
     stroke(180, 160, 60);
     strokeWeight(2 * scaleRatio);
-    rect(canvasWidth/2, canvasHeight * 0.9, canvasWidth * 0.5, 40 * scaleRatio, 5 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight * 0.91, canvasWidth * 0.5, 40 * scaleRatio, 5 * scaleRatio);
     
     // Email text or placeholder
     if (emailInput === "") {
         fill(150);
         textStyle(ITALIC);
-        text("Email address", canvasWidth/2, canvasHeight * 0.9);
+        text("Email address", canvasWidth/2, canvasHeight * 0.91);
     } else {
         fill(0);
         textStyle(NORMAL);
-        text(emailInput, canvasWidth/2, canvasHeight * 0.9);
+        text(emailInput, canvasWidth/2, canvasHeight * 0.91);
     }
     
     // Submit button or success message
