@@ -10,6 +10,7 @@
 // April 4, 2025 - Added anonymous analytics tracking
 // April 5, 2025 - Fixed iOS/iPhone compatibility issues with spaceship visibility and touch controls
 // April 6, 2025 - Emergency fixes for iOS spaceship visibility and controls
+// April 7, 2025 - Cleaned up iOS debug elements while preserving visibility fixes
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -206,16 +207,8 @@ function draw() {
             updateAndDrawAPIs();
             updateAndDrawAsteroids();
             
-            // Draw spaceship - iOS needs special handling
+            // Draw spaceship
             drawSpaceship();
-            
-            // iOS DEBUG: Draw a bright outline around the spaceship area to verify position
-            if (isIOSDevice) {
-                noFill();
-                stroke(255, 255, 0);
-                strokeWeight(4 * scaleRatio);
-                rect(spaceship.x, spaceship.y, spaceship.width + 20 * scaleRatio, spaceship.height + 20 * scaleRatio);
-            }
             
             // Update and draw explosions
             updateAndDrawExplosions();
@@ -266,8 +259,8 @@ function draw() {
             break;
     }
     
-    // Debug info
-    if (debugMode || isIOSDevice) { // Always show debug info on iOS for now
+    // Debug info - only show when debug mode is actually enabled
+    if (debugMode) { 
         fill(255);
         textAlign(LEFT, TOP);
         textSize(14 * scaleRatio);
@@ -1520,8 +1513,8 @@ function checkTouchZones() {
     // Track if we should trigger shooting
     let shouldShoot = false;
     
-    // For iOS, let's log all touches for debugging
-    if (isIOSDevice) {
+    // For iOS debugging - only log touches when in debug mode
+    if (debugMode && isIOSDevice) {
         console.log("Touches:", touches.length);
         for (let i = 0; i < touches.length; i++) {
             console.log(`Touch ${i}: x=${touches[i].x}, y=${touches[i].y}`);
@@ -1578,8 +1571,8 @@ function checkTouchZones() {
         shoot();
     }
     
-    // Debug visualization - always enabled for iOS temporarily
-    if (debugMode || isIOSDevice) {
+    // Debug visualization - only when debug mode is actually enabled
+    if (debugMode) {
         noFill();
         strokeWeight(2);
         
