@@ -58,6 +58,7 @@ let apis = [];
 let asteroids = [];
 let bulletCooldown = 0;
 let bulletCooldownTime = 15; // Frames between shots
+let explosions = [];
 
 // Mobile detection and controls
 let isMobileDevice = false;
@@ -131,6 +132,9 @@ function draw() {
             updateAndDrawAPIs();
             updateAndDrawAsteroids();
             drawSpaceship();
+            
+            // Update and draw explosions
+            updateAndDrawExplosions();
             
             // Spawn new APIs periodically
             if (frameCount % 90 === 0) {
@@ -264,15 +268,27 @@ function drawInstructionsScreen() {
 }
 
 function drawHUD() {
-    // Current level question at top
-    fill(0, 0, 0, 150);
-    noStroke();
-    rect(canvasWidth/2, 30 * scaleRatio, canvasWidth * 0.9, 50 * scaleRatio, 10 * scaleRatio);
+    // Current level question at top - ENHANCED for better visibility
+    fill(20, 60, 120, 220);  // Darker blue with higher opacity
+    stroke(100, 150, 255);   // Light blue border
+    strokeWeight(3 * scaleRatio);
+    rect(canvasWidth/2, 40 * scaleRatio, canvasWidth * 0.9, 70 * scaleRatio, 10 * scaleRatio);
     
-    fill(255);
-    textSize(16 * scaleRatio);
+    // Draw attention-grabbing use case label with pulsing effect
+    let pulseAmount = map(sin(frameCount * 0.05), -1, 1, 0.8, 1.2);
+    
+    fill(255, 220, 100); // Gold color
+    textSize(20 * scaleRatio * pulseAmount);  // Pulsing size
+    textStyle(BOLD);
     textAlign(CENTER, CENTER);
-    text(levels[currentLevel].question, canvasWidth/2, 30 * scaleRatio);
+    text("USE CASE:", canvasWidth/2, 20 * scaleRatio);
+    
+    // Draw the actual question
+    fill(255);
+    textSize(18 * scaleRatio);
+    textStyle(NORMAL);
+    textAlign(CENTER, CENTER);
+    text(levels[currentLevel].question, canvasWidth/2, 45 * scaleRatio);
     
     // Score
     fill(0, 0, 0, 150);
@@ -535,6 +551,9 @@ function updateAndDrawBullets() {
             if (d < (bullet.width/2 + api.width/2) * 0.7) {
                 // Remove bullet
                 bullets.splice(i, 1);
+                
+                // Create explosion at API location
+                createExplosion(api.x, api.y, api.type === levels[currentLevel].correctAPI);
                 
                 // Check if this is the correct API
                 if (api.type === levels[currentLevel].correctAPI) {
@@ -1007,4 +1026,82 @@ function resetLevel() {
     bulletCooldown = 0;
     
     console.log("Level reset, now on level " + (currentLevel + 1));
+}
+
+// Function to create an explosion effect
+function createExplosion(x, y, isCorrect) {
+    // Create particles for the explosion
+    let particleCount = 40;
+    let explosion = {
+        x: x,
+        y: y,
+        particles: [],
+        timeCreated: millis()
+    };
+    
+    // Create particles with different velocities
+    for (let i = 0; i < particleCount; i++) {
+        let angle = random(TWO_PI);
+        let speed = random(1, 5) * scaleRatio;
+        
+        // Set colors based on correct/incorrect
+        let r, g, b;
+        if (isCorrect) {
+            // Green explosion for correct API
+            r = random(50, 150);
+            g = random(200, 255);
+            b = random(50, 150);
+        } else {
+            // Red explosion for incorrect API
+            r = random(200, 255);
+            g = random(50, 150);
+            b = random(50, 100);
+        }
+        
+        explosion.particles.push({
+            vx: cos(angle) * speed,
+            vy: sin(angle) * speed,
+            size: random(3, 10) * scaleRatio,
+            color: [r, g, b],
+            alpha: 255,
+            rotation: random(TWO_PI)
+        });
+    }
+    
+    explosions.push(explosion);
+}
+
+// Function to update and draw all explosions
+function updateAndDrawExplosions() {
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        let explosion = explosions[i];
+        let timePassed = millis() - explosion.timeCreated;
+        
+        // Remove explosion after 1 second
+        if (timePassed > 1000) {
+            explosions.splice(i, 1);
+            continue;
+        }
+        
+        // Update and draw each particle
+        for (let j = 0; j < explosion.particles.length; j++) {
+            let particle = explosion.particles[j];
+            
+            // Calculate current position based on elapsed time
+            let x = explosion.x + (particle.vx * timePassed * 0.1);
+            let y = explosion.y + (particle.vy * timePassed * 0.1);
+            
+            // Decrease alpha over time
+            let alpha = 255 - (timePassed / 1000) * 255;
+            
+            // Draw particle
+            push();
+            translate(x, y);
+            rotate(particle.rotation + timePassed * 0.01);
+            fill(particle.color[0], particle.color[1], particle.color[2], alpha);
+            noStroke();
+            rect(0, 0, particle.size, particle.size);
+            pop();
+        }
+    }
 } 
