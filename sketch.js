@@ -232,22 +232,28 @@ function setup() {
 function setupTouchControls() {
     if (!isMobile) return;
     
+    console.log("Setting up touch controls for mobile device");
+    console.log("Canvas dimensions:", canvasWidth, "x", canvasHeight);
+    console.log("Scale ratio:", scaleRatio);
+    
     // Left movement zone (left 1/3 of screen)
     touchZones.left.width = canvasWidth / 3;
     touchZones.left.height = canvasHeight;
     touchZones.left.x = touchZones.left.width / 2;
-    touchZones.left.y = canvasHeight / 2;
+    touchZones.left.y = canvasHeight * 0.6; // Position in the lower part of the screen for easier thumb access
     
     // Right movement zone (right 1/3 of screen)
     touchZones.right.width = canvasWidth / 3;
     touchZones.right.height = canvasHeight;
     touchZones.right.x = canvasWidth - touchZones.right.width / 2;
-    touchZones.right.y = canvasHeight / 2;
+    touchZones.right.y = canvasHeight * 0.6; // Position in the lower part of the screen
     
-    // Shoot button (bottom center)
-    touchZones.shoot.radius = 50 * scaleRatio;
+    // Shoot button (bottom center) - make it larger and more accessible
+    touchZones.shoot.radius = 60 * scaleRatio; // Larger radius for easier tapping
     touchZones.shoot.x = canvasWidth / 2;
-    touchZones.shoot.y = canvasHeight - 80 * scaleRatio;
+    touchZones.shoot.y = canvasHeight - 100 * scaleRatio; // Position higher up from the bottom
+    
+    console.log("Touch zones configured:", touchZones);
 }
 
 // Window resize handler
@@ -973,46 +979,52 @@ function handlePlayerMovement() {
 
 // Draw touch controls on mobile
 function drawTouchControls() {
-    // Only draw controls in debug mode or semi-transparent normally
-    let controlOpacity = debugMode ? 100 : 40;
+    // Make controls more visible for better mobile gameplay
+    let controlOpacity = debugMode ? 150 : 80; // Increased opacity for better visibility
     
     // Left movement zone
     noStroke();
     if (touchZones.left.active) {
-        fill(0, 200, 255, controlOpacity + 20);
+        fill(0, 200, 255, controlOpacity + 50); // More visible when active
     } else {
         fill(200, 200, 200, controlOpacity);
     }
     
-    // Left arrow indicator
+    // Left arrow indicator - Draw a full button shape for better touch response
     push();
-    translate(touchZones.left.x, touchZones.left.y);
-    triangle(-20 * scaleRatio, 0, 20 * scaleRatio, -30 * scaleRatio, 20 * scaleRatio, 30 * scaleRatio);
+    rectMode(CENTER);
+    rect(touchZones.left.x, touchZones.left.y, touchZones.left.width * 0.4, canvasHeight * 0.3, 10 * scaleRatio);
+    fill(255, 255, 255, controlOpacity + 80);
+    textSize(24 * scaleRatio);
+    text("←", touchZones.left.x, touchZones.left.y);
     pop();
     
     // Right movement zone
     if (touchZones.right.active) {
-        fill(0, 200, 255, controlOpacity + 20);
+        fill(0, 200, 255, controlOpacity + 50);
     } else {
         fill(200, 200, 200, controlOpacity);
     }
     
-    // Right arrow indicator
+    // Right arrow indicator - Draw a full button shape for better touch response
     push();
-    translate(touchZones.right.x, touchZones.right.y);
-    triangle(20 * scaleRatio, 0, -20 * scaleRatio, -30 * scaleRatio, -20 * scaleRatio, 30 * scaleRatio);
+    rectMode(CENTER);
+    rect(touchZones.right.x, touchZones.right.y, touchZones.right.width * 0.4, canvasHeight * 0.3, 10 * scaleRatio);
+    fill(255, 255, 255, controlOpacity + 80);
+    textSize(24 * scaleRatio);
+    text("→", touchZones.right.x, touchZones.right.y);
     pop();
     
-    // Shoot button
+    // Shoot button - make larger and more visible
     if (touchZones.shoot.active) {
-        fill(255, 50, 50, controlOpacity + 40);
+        fill(255, 50, 50, controlOpacity + 50);
     } else {
-        fill(255, 200, 0, controlOpacity);
+        fill(255, 150, 0, controlOpacity + 20);
     }
-    ellipse(touchZones.shoot.x, touchZones.shoot.y, touchZones.shoot.radius * 2);
+    ellipse(touchZones.shoot.x, touchZones.shoot.y, touchZones.shoot.radius * 2.2, touchZones.shoot.radius * 2.2);
     
-    fill(255, 255, 255, controlOpacity + 60);
-    textSize(18 * scaleRatio);
+    fill(255, 255, 255, controlOpacity + 100);
+    textSize(20 * scaleRatio);
     text("FIRE", touchZones.shoot.x, touchZones.shoot.y);
 }
 
@@ -1032,23 +1044,74 @@ function shootBullet() {
 
 // Touch event handlers
 function touchStarted() {
-    if (!isMobile) return;
+    if (!isMobile) return false;
     
-    checkTouchZones();
+    console.log("Touch started at", touches[0]?.x, touches[0]?.y, "Game state:", gameState);
+    
+    // Handle splash screen - tap anywhere to continue
+    if (gameState === "splash") {
+        if (millis() > splashTimeout / 2) { // Allow skipping after half the splash time
+            gameState = "about";
+            return false;
+        }
+    }
+    
+    // Handle about screen - handle touch for starting the game
+    if (gameState === "about") {
+        // Start game button
+        let titleY = 110 * scaleRatio + (24 * scaleRatio * 11);
+        let startY = titleY + (24 * scaleRatio * 3) + (24 * scaleRatio * 3);
+        let startW = 200 * scaleRatio;
+        let startH = 50 * scaleRatio;
+        
+        if (touches[0]?.x > canvasWidth/2 - startW/2 && 
+            touches[0]?.x < canvasWidth/2 + startW/2 &&
+            touches[0]?.y > startY - startH/2 && 
+            touches[0]?.y < startY + startH/2) {
+            
+            gameState = "playing";
+            gameStartTime = millis();
+            playerName = inputName;
+            if (playerName === "") {
+                playerName = "HR Professional";
+            }
+            return false;
+        }
+    }
+    
+    // If game is in playing state, check for touch zones
+    if (gameState === "playing") {
+        checkTouchZones();
+    }
+    
     // Prevent default to avoid browser gestures
     return false;
 }
 
 function touchMoved() {
-    if (!isMobile) return;
+    if (!isMobile) return false;
     
-    checkTouchZones();
+    // Update touch zones for game controls in playing state
+    if (gameState === "playing") {
+        checkTouchZones();
+    }
+    
     // Prevent default to avoid browser gestures
     return false;
 }
 
 function touchEnded() {
-    if (!isMobile) return;
+    if (!isMobile) return false;
+    
+    console.log("Touch ended, game state:", gameState);
+    
+    // Handle splash screen - touching moves to about screen
+    if (gameState === "splash") {
+        if (millis() > splashTimeout / 2) { // Allow skipping after half the splash time
+            gameState = "about";
+            return false;
+        }
+    }
     
     // Allow skipping celebration screen with touch
     if (gameState === "levelCompleted") {
@@ -1067,12 +1130,18 @@ function touchEnded() {
         return false;
     }
     
-    // Clear the touch zones
+    // Clear the touch zones when touch ends
     touchZones.left.active = false;
     touchZones.right.active = false;
     
-    // Don't clear shoot on touchEnd to allow continuous shooting
-    // by holding the button
+    // Keep shoot button active if another touch is still on it
+    touchZones.shoot.active = false;
+    for (let i = 0; i < touches.length; i++) {
+        if (dist(touches[i].x, touches[i].y, touchZones.shoot.x, touchZones.shoot.y) < touchZones.shoot.radius) {
+            touchZones.shoot.active = true;
+            break;
+        }
+    }
     
     // MOBILE TOUCH HANDLING FOR WIN SCREEN - Handle email form and LinkedIn button
     if (gameState === "won" && touches.length > 0) {
@@ -1240,29 +1309,49 @@ function touchEnded() {
 
 // Check which touch zones are being activated
 function checkTouchZones() {
+    // Only process if in playing state
+    if (gameState !== "playing") return;
+    
     // Reset touch zones
     touchZones.left.active = false;
     touchZones.right.active = false;
     touchZones.shoot.active = false;
     
+    // Debug touch points
+    if (debugMode && touches.length > 0) {
+        console.log("Checking touches:", touches.length, "Touch points at", 
+                   touches.map(t => `(${Math.round(t.x)},${Math.round(t.y)})`).join(', '));
+    }
+    
     // Check each touch point
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
-        // Check left zone
-        if (touch.x < canvasWidth / 3) {
+        // Check left zone - use an actual rectangle hitbox rather than just x position
+        if (touch.x < canvasWidth / 3 && 
+            touch.y > canvasHeight * 0.4) { // Only bottom portion of screen
             touchZones.left.active = true;
+            if (debugMode) console.log("Left zone activated");
         }
         
-        // Check right zone
-        if (touch.x > canvasWidth * 2/3) {
+        // Check right zone - use an actual rectangle hitbox
+        if (touch.x > canvasWidth * 2/3 && 
+            touch.y > canvasHeight * 0.4) { // Only bottom portion of screen
             touchZones.right.active = true;
+            if (debugMode) console.log("Right zone activated");
         }
         
-        // Check shoot button
-        if (dist(touch.x, touch.y, touchZones.shoot.x, touchZones.shoot.y) < touchZones.shoot.radius) {
+        // Check shoot button - use proper distance calculation
+        let shootDist = dist(touch.x, touch.y, touchZones.shoot.x, touchZones.shoot.y);
+        if (shootDist < touchZones.shoot.radius) {
             touchZones.shoot.active = true;
+            if (debugMode) console.log("Shoot button activated");
         }
+    }
+    
+    // Force a bullet shot if shoot is active and cooldown allows
+    if (touchZones.shoot.active && bulletCooldown <= 0) {
+        shootBullet();
     }
 }
 
