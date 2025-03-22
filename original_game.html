@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADP API Game - Original Version</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+        }
+        #message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <script src="original_game.js"></script>
+</head>
+<body>
+    <div id="message">Loading game...</div>
+    <script>
+        // Check if the game fails to load and show message
+        setTimeout(function() {
+            if (typeof window.setup === 'undefined') {
+                document.getElementById('message').style.display = 'block';
+            }
+        }, 3000);
+    </script>
+</body>
+</html> 
