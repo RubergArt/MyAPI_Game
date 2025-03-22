@@ -268,27 +268,20 @@ function drawInstructionsScreen() {
 }
 
 function drawHUD() {
-    // Current level question at top - ENHANCED for better visibility
+    // Current level question at top - ENHANCED for better visibility with larger size
     fill(20, 60, 120, 220);  // Darker blue with higher opacity
     stroke(100, 150, 255);   // Light blue border
     strokeWeight(3 * scaleRatio);
-    rect(canvasWidth/2, 40 * scaleRatio, canvasWidth * 0.9, 70 * scaleRatio, 10 * scaleRatio);
+    rect(canvasWidth/2, 50 * scaleRatio, canvasWidth * 0.9, 80 * scaleRatio, 10 * scaleRatio);
     
-    // Draw attention-grabbing use case label with pulsing effect
-    let pulseAmount = map(sin(frameCount * 0.05), -1, 1, 0.8, 1.2);
-    
-    fill(255, 220, 100); // Gold color
-    textSize(20 * scaleRatio * pulseAmount);  // Pulsing size
-    textStyle(BOLD);
+    // Make the label and question more prominent
     textAlign(CENTER, CENTER);
-    text("USE CASE:", canvasWidth/2, 20 * scaleRatio);
     
-    // Draw the actual question
+    // Draw the actual question with larger text and better positioning
     fill(255);
-    textSize(18 * scaleRatio);
-    textStyle(NORMAL);
-    textAlign(CENTER, CENTER);
-    text(levels[currentLevel].question, canvasWidth/2, 45 * scaleRatio);
+    textSize(22 * scaleRatio);
+    textStyle(BOLD);
+    text(levels[currentLevel].question, canvasWidth/2, 50 * scaleRatio);
     
     // Score
     fill(0, 0, 0, 150);
