@@ -683,7 +683,7 @@ function drawEmailForm() {
         noStroke();
         textSize(18 * scaleRatio);
         textStyle(NORMAL);
-        text("Thank you! Your certificate has been emailed.", canvasWidth/2, canvasHeight * 0.95);
+        text("Thank you!", canvasWidth/2, canvasHeight * 0.95);
         
         // Add pulsing play again message
         let pulseAmount = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
