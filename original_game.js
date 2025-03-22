@@ -1,6 +1,6 @@
 // ADP API Game - Original Version
 // Based on the original game brief with proper level progression
-// Last updated: March 27, 2025 - Fixed email input for @ and . characters
+// Last updated: March 28, 2025 - Enhanced email input with all valid characters
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -474,17 +474,102 @@ function drawEmailForm() {
     }
 }
 
-function submitEmail() {
-    // Improved email validation
+function keyPressed() {
+    // Space key functions
+    if (keyCode === 32) { // SPACE
+        if (gameState === "splash") {
+            gameState = "instructions";
+        } else if (gameState === "instructions") {
+            gameState = "playing";
+        } else if (gameState === "playing") {
+            shoot();
+        } else if (gameState === "levelCompleted" && readyToProceed) {
+            // Progress to next level or win screen
+            if (currentLevel >= levels.length - 1) {
+                // All levels completed, show win screen
+                gameState = "won";
+                winStartTime = millis();
+            } else {
+                // Advance to next level
+                currentLevel++;
+                resetLevel();
+                gameState = "playing";
+            }
+            readyToProceed = false; // Reset for next level
+        } else if (gameState === "gameOver" && canRestart) {
+            resetGame();
+            gameState = "playing";
+        }
+    }
+    
+    // Email input handling in win screen
+    if (gameState === "won" && !emailSubmitted) {
+        console.log("Key pressed in email field:", keyCode, key); // Debug log
+        
+        if (keyCode === BACKSPACE) {
+            // Handle backspace
+            emailInput = emailInput.slice(0, -1);
+            return false; // Prevent browser back
+        } else if (keyCode === ENTER) {
+            // Handle enter/return key
+            submitEmail();
+            return false;
+        } else {
+            // Handle all other keys by checking for valid email characters
+            const validEmailChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@.-_+";
+            
+            // Special handling for period/dot (ASCII 46)
+            if (keyCode === 190 || key === '.') {
+                emailInput += '.';
+                console.log("Added period to email:", emailInput); // Debug log
+                return false;
+            }
+            
+            // Check if key is a valid email character
+            if (validEmailChars.includes(key)) {
+                emailInput += key;
+                console.log("Added character to email:", key, emailInput); // Debug log
+                return false;
+            }
+        }
+    }
+    
+    // Debug mode toggle
+    if (keyCode === 68) { // D key
+        debugMode = !debugMode;
+        console.log("Debug mode:", debugMode);
+    }
+}
+
+// Virtual keyboard for email input
+function showVirtualKeyboard() {
+    if (!isMobileDevice) return; // Only needed on mobile
+    
+    // Clear any previous error
+    emailError = "";
+    
+    // Use browser's prompt for email input
+    let email = prompt("Enter your email address:");
+    if (email !== null) {
+        emailInput = email;
+        console.log("Email entered via prompt:", emailInput); // Debug log
+        
+        // Validate the email format
+        validateEmail();
+    }
+}
+
+// Validate email format
+function validateEmail() {
     if (emailInput === "") {
         emailError = "Please enter an email address";
-        return;
+        return false;
     }
     
     // Check for both @ and . in the email
     if (!emailInput.includes('@') || !emailInput.includes('.')) {
         emailError = "Please enter a valid email address";
-        return;
+        return false;
     }
     
     // Additional validation: make sure the @ comes before the last .
@@ -493,10 +578,21 @@ function submitEmail() {
     
     if (atIndex > lastDotIndex || atIndex === -1 || lastDotIndex === -1) {
         emailError = "Please enter a valid email address";
+        return false;
+    }
+    
+    // Email format appears valid
+    emailError = "";
+    return true;
+}
+
+function submitEmail() {
+    // Validate before submission
+    if (!validateEmail()) {
         return;
     }
     
-    // Clear any previous errors
+    // Clear any previous errors and set submitting state
     emailError = "";
     emailSubmitting = true;
     
@@ -967,56 +1063,6 @@ function checkTouchZones() {
     }
 }
 
-function keyPressed() {
-    // Space key functions
-    if (keyCode === 32) { // SPACE
-        if (gameState === "splash") {
-            gameState = "instructions";
-        } else if (gameState === "instructions") {
-            gameState = "playing";
-        } else if (gameState === "playing") {
-            shoot();
-        } else if (gameState === "levelCompleted" && readyToProceed) {
-            // Progress to next level or win screen
-            if (currentLevel >= levels.length - 1) {
-                // All levels completed, show win screen
-                gameState = "won";
-                winStartTime = millis();
-            } else {
-                // Advance to next level
-                currentLevel++;
-                resetLevel();
-                gameState = "playing";
-            }
-            readyToProceed = false; // Reset for next level
-        } else if (gameState === "gameOver" && canRestart) {
-            resetGame();
-            gameState = "playing";
-        }
-    }
-    
-    // Only allow text input in the win screen email field
-    if (gameState === "won" && !emailSubmitted) {
-        if (keyCode === BACKSPACE) {
-            emailInput = emailInput.slice(0, -1);
-            return false; // Prevent browser back
-        } else if (keyCode === ENTER) {
-            submitEmail();
-            return false;
-        } else if (keyCode >= 32 && keyCode <= 126) {
-            // Printable characters - this range includes all standard keyboard characters
-            // including @ and . which are essential for email addresses
-            emailInput += key;
-        }
-    }
-    
-    // Debug mode toggle
-    if (keyCode === 68) { // D key
-        debugMode = !debugMode;
-        console.log("Debug mode:", debugMode);
-    }
-}
-
 function touchStarted() {
     if (gameState === "splash") {
         gameState = "instructions";
@@ -1053,18 +1099,7 @@ function touchStarted() {
             mouseY > emailFieldY - emailFieldH/2 && mouseY < emailFieldY + emailFieldH/2) {
             // Show keyboard for email input on mobile
             if (isMobileDevice) {
-                let email = prompt("Enter your email address:");
-                if (email !== null) {
-                    // Directly set the email input
-                    emailInput = email;
-                    
-                    // Immediately validate the email
-                    if (!email.includes('@') || !email.includes('.')) {
-                        emailError = "Please enter a valid email address";
-                    } else {
-                        emailError = ""; // Clear any previous errors
-                    }
-                }
+                showVirtualKeyboard();
             }
         }
         
