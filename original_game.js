@@ -7,6 +7,49 @@
 // April 1, 2025 - Added confetti celebration, floating score notifications, and improved bubble text
 // April 2, 2025 - Fixed score notifications when hitting correct API bubble
 // April 3, 2025 - Added personalized certificates and LinkedIn sharing
+// April 4, 2025 - Added anonymous analytics tracking
+
+// Supabase client configuration
+const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
+const SUPABASE_KEY = 'your-supabase-anon-key';
+let supabaseInitialized = false;
+let supabase = null;
+
+// Initialize Supabase client
+function initSupabase() {
+    if (supabaseInitialized) return;
+    
+    try {
+        // Check if supabase-js is loaded
+        if (typeof supabaseClient !== 'undefined') {
+            supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_KEY);
+            supabaseInitialized = true;
+            console.log('Supabase initialized successfully');
+        } else {
+            console.log('Supabase client not available, analytics disabled');
+        }
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
+    }
+}
+
+// Analytics functions - using only counters with no personal data
+function incrementCounter(counterName) {
+    if (!supabaseInitialized) return;
+    
+    try {
+        supabase.rpc('increment_counter', { counter_name: counterName })
+            .then(response => {
+                if (response.error) {
+                    console.error('Error incrementing counter:', response.error);
+                } else {
+                    console.log(`Counter ${counterName} incremented`);
+                }
+            });
+    } catch (error) {
+        console.error('Error calling increment_counter:', error);
+    }
+}
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -117,6 +160,12 @@ function setup() {
     
     // Initialize nameInputSelected to false
     nameInputSelected = false;
+    
+    // Initialize Supabase if script is loaded
+    initSupabase();
+    
+    // Count a game start
+    incrementCounter('game_starts');
 }
 
 function draw() {
@@ -775,6 +824,8 @@ function keyPressed() {
             }
         } else if (gameState === "instructions") {
             gameState = "playing";
+            // Track game play started (after instructions)
+            incrementCounter('gameplay_started');
         } else if (gameState === "playing") {
             shoot();
         } else if (gameState === "levelCompleted" && readyToProceed) {
@@ -783,9 +834,13 @@ function keyPressed() {
                 // All levels completed, show win screen
                 gameState = "won";
                 winStartTime = millis();
+                // Track game completion
+                incrementCounter('game_completions');
             } else {
                 // Advance to next level
                 currentLevel++;
+                // Track level advancement
+                incrementCounter('level_' + currentLevel + '_started');
                 resetLevel();
                 gameState = "playing";
             }
@@ -793,10 +848,14 @@ function keyPressed() {
         } else if (gameState === "gameOver" && canRestart) {
             resetGame();
             gameState = "playing";
+            // Track game restart after game over
+            incrementCounter('game_restarts');
         } else if (gameState === "won" && emailSubmitted) {
             // Start a new game after winning and submitting email
             resetGame();
             gameState = "splash";
+            // Track game restart after winning
+            incrementCounter('restart_after_win');
         }
     }
     
@@ -918,6 +977,9 @@ function submitEmail() {
     
     // Send to Supabase (placeholder - connect to the actual Supabase setup)
     console.log("Would submit email to Supabase:", emailInput);
+    
+    // Track email submission - essential engagement metric
+    incrementCounter('email_submissions');
     
     // Simulate successful submission
     setTimeout(function() {
@@ -1949,6 +2011,9 @@ function shareOnLinkedIn() {
     
     // Open LinkedIn share dialog in a new window
     window.open(shareUrl, '_blank', 'width=600,height=600');
+    
+    // Track LinkedIn share
+    incrementCounter('linkedin_shares');
     
     console.log("Sharing on LinkedIn:", shareUrl);
 } 
