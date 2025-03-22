@@ -3,6 +3,7 @@
 // Last updated: March 28, 2025 - Enhanced email input with all valid characters
 // March 29, 2025 - Added restart option after winning
 // March 30, 2025 - Made play again option always available
+// March 31, 2025 - Added epic alien explosions and certificate design
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -359,148 +360,270 @@ function drawGameOverScreen() {
 }
 
 function drawWinScreen() {
-    // Background
-    background(20, 40, 100);
+    // Certificate background
+    background(245, 245, 235); // Parchment-like color
     
-    // Trophy
-    drawTrophy(canvasWidth/2, canvasHeight * 0.3, 120 * scaleRatio);
+    // Draw certificate border
+    drawCertificateBorder();
     
-    // Congratulations text
-    fill(255);
+    // Draw decorative seal
+    drawCertificateSeal(canvasWidth/2, canvasHeight * 0.78, 60 * scaleRatio);
+    
+    // Title
+    fill(50, 50, 120);
     textSize(32 * scaleRatio);
-    text("Congratulations!", canvasWidth/2, canvasHeight * 0.55);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text("CERTIFICATE OF ACHIEVEMENT", canvasWidth/2, canvasHeight * 0.2);
     
+    // Decorative line
+    stroke(180, 160, 60);
+    strokeWeight(2 * scaleRatio);
+    line(canvasWidth * 0.25, canvasHeight * 0.26, canvasWidth * 0.75, canvasHeight * 0.26);
+    
+    // Main text
+    noStroke();
+    fill(40, 40, 80);
+    textSize(18 * scaleRatio);
+    textStyle(NORMAL);
+    text("This certifies that", canvasWidth/2, canvasHeight * 0.32);
+    
+    // Player designation
+    textStyle(ITALIC);
+    textSize(24 * scaleRatio);
+    text("API Champion", canvasWidth/2, canvasHeight * 0.38);
+    
+    // Description
+    textStyle(NORMAL);
+    textSize(16 * scaleRatio);
+    text("has successfully demonstrated exceptional understanding of", canvasWidth/2, canvasHeight * 0.45);
+    
+    // What they learned
+    textStyle(BOLD);
     textSize(20 * scaleRatio);
-    text("You have a top level understanding of APIs", canvasWidth/2, canvasHeight * 0.62);
+    text("ADP Marketplace APIs", canvasWidth/2, canvasHeight * 0.51);
+    
+    // Score
+    textStyle(NORMAL);
+    textSize(16 * scaleRatio);
+    text("with a score of", canvasWidth/2, canvasHeight * 0.58);
+    
+    textStyle(BOLD);
+    textSize(28 * scaleRatio);
+    fill(20, 150, 20);
+    text(score + " points", canvasWidth/2, canvasHeight * 0.65);
     
     // Email collection form
     drawEmailForm();
     
-    // Play again option (always visible)
+    // Play again option
     drawPlayAgainButton();
+}
+
+function drawCertificateBorder() {
+    // Fancy certificate border
+    push();
+    noFill();
+    strokeWeight(6 * scaleRatio);
+    stroke(180, 160, 60); // Gold color
+    rect(canvasWidth/2, canvasHeight/2, canvasWidth * 0.9, canvasHeight * 0.9, 10 * scaleRatio);
+    
+    // Inner border
+    strokeWeight(2 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight/2, canvasWidth * 0.85, canvasHeight * 0.85, 8 * scaleRatio);
+    
+    // Decorative corners
+    drawCertificateCorner(canvasWidth * 0.1, canvasHeight * 0.1);
+    drawCertificateCorner(canvasWidth * 0.9, canvasHeight * 0.1);
+    drawCertificateCorner(canvasWidth * 0.1, canvasHeight * 0.9);
+    drawCertificateCorner(canvasWidth * 0.9, canvasHeight * 0.9);
+    pop();
+}
+
+function drawCertificateCorner(x, y) {
+    push();
+    translate(x, y);
+    
+    // Draw decorative corner
+    stroke(180, 160, 60);
+    strokeWeight(3 * scaleRatio);
+    noFill();
+    
+    let size = 30 * scaleRatio;
+    
+    // Curved corner elements
+    beginShape();
+    vertex(0, -size);
+    bezierVertex(size/2, -size, size, -size/2, size, 0);
+    endShape();
+    
+    beginShape();
+    vertex(-size, 0);
+    bezierVertex(-size, -size/2, -size/2, -size, 0, -size);
+    endShape();
+    
+    // Small decorative elements
+    strokeWeight(2 * scaleRatio);
+    ellipse(0, 0, size/2, size/2);
+    
+    pop();
+}
+
+function drawCertificateSeal(x, y, size) {
+    push();
+    translate(x, y);
+    
+    // Outer circle
+    fill(180, 160, 60, 180); // Gold with transparency
+    stroke(100, 90, 30);
+    strokeWeight(2 * scaleRatio);
+    ellipse(0, 0, size * 2, size * 2);
+    
+    // Inner circle
+    fill(200, 180, 70, 200);
+    ellipse(0, 0, size * 1.5, size * 1.5);
+    
+    // Center emblem
+    fill(220, 200, 80);
+    noStroke();
+    
+    // Draw API symbol - stylized "API" letters
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(size * 0.6);
+    fill(90, 50, 20);
+    text("ADP", 0, -size * 0.1);
+    
+    textSize(size * 0.35);
+    text("MARKETPLACE", 0, size * 0.3);
+    
+    // Radiating lines for official look
+    stroke(100, 90, 30, 150);
+    strokeWeight(1.5 * scaleRatio);
+    for (let i = 0; i < 16; i++) {
+        let angle = i * TWO_PI / 16;
+        let x1 = cos(angle) * size * 0.8;
+        let y1 = sin(angle) * size * 0.8;
+        let x2 = cos(angle) * size;
+        let y2 = sin(angle) * size;
+        line(x1, y1, x2, y2);
+    }
+    
+    // Ribbon effect underneath
+    let ribbonWidth = size * 1.2;
+    let ribbonHeight = size * 0.4;
+    let ribbonY = size * 0.9;
+    
+    // Left ribbon
+    fill(200, 50, 50);
+    stroke(150, 30, 30);
+    beginShape();
+    vertex(-ribbonWidth/2, ribbonY);
+    vertex(-ribbonWidth/4, ribbonY + ribbonHeight);
+    vertex(0, ribbonY);
+    vertex(0, ribbonY - ribbonHeight);
+    endShape(CLOSE);
+    
+    // Right ribbon
+    beginShape();
+    vertex(ribbonWidth/2, ribbonY);
+    vertex(ribbonWidth/4, ribbonY + ribbonHeight);
+    vertex(0, ribbonY);
+    vertex(0, ribbonY - ribbonHeight);
+    endShape(CLOSE);
+    
+    pop();
+}
+
+function drawEmailForm() {
+    // Label with more professional wording
+    fill(50, 50, 120);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(16 * scaleRatio);
+    textStyle(NORMAL);
+    
+    // Position text above the email input
+    text("To learn more about how ADP's Marketplace APIs", canvasWidth/2, canvasHeight * 0.83);
+    text("can transform your HR experience, please enter your email:", canvasWidth/2, canvasHeight * 0.86);
+    
+    // Email input box - styled for certificate
+    fill(255);
+    stroke(180, 160, 60);
+    strokeWeight(2 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight * 0.9, canvasWidth * 0.5, 40 * scaleRatio, 5 * scaleRatio);
+    
+    // Email text or placeholder
+    if (emailInput === "") {
+        fill(150);
+        textStyle(ITALIC);
+        text("Email address", canvasWidth/2, canvasHeight * 0.9);
+    } else {
+        fill(0);
+        textStyle(NORMAL);
+        text(emailInput, canvasWidth/2, canvasHeight * 0.9);
+    }
+    
+    // Submit button or success message
+    if (emailSubmitted) {
+        // Show success message
+        fill(20, 150, 20);
+        noStroke();
+        textSize(18 * scaleRatio);
+        textStyle(NORMAL);
+        text("Thank you! Your certificate has been emailed.", canvasWidth/2, canvasHeight * 0.95);
+        
+        // Add pulsing play again message
+        let pulseAmount = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
+        fill(180, 100, 20);
+        textSize(20 * scaleRatio * pulseAmount);
+        text("Press SPACE or tap screen to play again", canvasWidth/2, canvasHeight * 0.99);
+    } else if (emailSubmitting) {
+        // Show loading indicator
+        fill(50, 50, 120);
+        noStroke();
+        textSize(18 * scaleRatio);
+        text("Submitting...", canvasWidth/2, canvasHeight * 0.95);
+    } else {
+        // Show submit button - styled to match certificate
+        fill(220, 200, 80);
+        stroke(180, 160, 60);
+        strokeWeight(2 * scaleRatio);
+        rect(canvasWidth/2, canvasHeight * 0.95, 160 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
+        
+        fill(90, 50, 20);
+        noStroke();
+        textSize(18 * scaleRatio);
+        textStyle(BOLD);
+        text("SUBMIT", canvasWidth/2, canvasHeight * 0.95);
+    }
+    
+    // Show error if any
+    if (emailError !== "") {
+        fill(200, 30, 30);
+        textSize(14 * scaleRatio);
+        textStyle(NORMAL);
+        text(emailError, canvasWidth/2, canvasHeight * 0.98);
+    }
 }
 
 function drawPlayAgainButton() {
     // If email is being submitted or has been submitted, don't show this button
     if (emailSubmitting || emailSubmitted) return;
     
-    // Play Again button at bottom of screen
-    fill(50, 180, 50);
-    stroke(100, 255, 100);
+    // Play Again button at bottom right corner
+    fill(50, 120, 50);
+    stroke(30, 100, 30);
     strokeWeight(2 * scaleRatio);
-    rect(canvasWidth/2, canvasHeight * 0.95, 200 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
+    rect(canvasWidth * 0.85, canvasHeight * 0.95, 180 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
     
     // Button text
     fill(255);
     noStroke();
     textSize(18 * scaleRatio);
     textAlign(CENTER, CENTER);
-    text("Play Again", canvasWidth/2, canvasHeight * 0.95);
-}
-
-function drawTrophy(x, y, size) {
-    push();
-    translate(x, y);
-    
-    // Trophy cup - gold color
-    fill(255, 215, 0);
-    stroke(218, 165, 32);
-    strokeWeight(2 * scaleRatio);
-    
-    // Cup body
-    beginShape();
-    vertex(-size/3, 0);
-    vertex(-size/2, -size/2);
-    vertex(-size/2, -size*0.7);
-    bezierVertex(-size/2, -size*0.9, size/2, -size*0.9, size/2, -size*0.7);
-    vertex(size/2, -size/2);
-    vertex(size/3, 0);
-    endShape(CLOSE);
-    
-    // Base
-    rect(0, size/4, size/2, size/4, 5);
-    rect(0, size/2, size*0.7, size/10, 2);
-    
-    // Handles
-    noFill();
-    strokeWeight(4 * scaleRatio);
-    arc(-size/2, -size/2, size/3, size/2, PI, TWO_PI-PI/4);
-    arc(size/2, -size/2, size/3, size/2, PI+PI/4, TWO_PI);
-    
-    // Shiny effect
-    noStroke();
-    fill(255, 255, 200, 100);
-    ellipse(-size/4, -size/2, size/6, size/6);
-    
-    pop();
-}
-
-function drawEmailForm() {
-    // Email form background
-    fill(30, 50, 120);
-    stroke(100, 150, 255);
-    strokeWeight(2 * scaleRatio);
-    rect(canvasWidth/2, canvasHeight * 0.75, canvasWidth * 0.8, canvasHeight * 0.2, 10 * scaleRatio);
-    
-    // Label
-    fill(255);
-    noStroke();
-    textAlign(CENTER, CENTER);
-    textSize(16 * scaleRatio);
-    text("If you would like to know more about ADP's Marketplace APIs", canvasWidth/2, canvasHeight * 0.7);
-    text("please enter your email address:", canvasWidth/2, canvasHeight * 0.73);
-    
-    // Email input box
-    fill(255);
-    stroke(150, 150, 200);
-    rect(canvasWidth/2, canvasHeight * 0.78, canvasWidth * 0.6, 40 * scaleRatio, 5 * scaleRatio);
-    
-    // Email text or placeholder
-    if (emailInput === "") {
-        fill(150);
-        text("Email address", canvasWidth/2, canvasHeight * 0.78);
-    } else {
-        fill(0);
-        text(emailInput, canvasWidth/2, canvasHeight * 0.78);
-    }
-    
-    // Submit button or success message
-    if (emailSubmitted) {
-        // Show success message
-        fill(100, 255, 100);
-        noStroke();
-        textSize(18 * scaleRatio);
-        text("Thank you! Your email has been submitted.", canvasWidth/2, canvasHeight * 0.85);
-        
-        // Add pulsing play again message
-        let pulseAmount = map(sin(frameCount * 0.1), -1, 1, 0.8, 1.2);
-        fill(255, 220, 100);
-        textSize(20 * scaleRatio * pulseAmount);
-        text("Press SPACE or tap screen to play again", canvasWidth/2, canvasHeight * 0.92);
-    } else if (emailSubmitting) {
-        // Show loading indicator
-        fill(150, 150, 255);
-        noStroke();
-        textSize(18 * scaleRatio);
-        text("Submitting...", canvasWidth/2, canvasHeight * 0.85);
-    } else {
-        // Show submit button
-        fill(50, 120, 200);
-        stroke(100, 170, 255);
-        rect(canvasWidth/2, canvasHeight * 0.85, 180 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
-        
-        fill(255);
-        noStroke();
-        textSize(18 * scaleRatio);
-        text("Submit", canvasWidth/2, canvasHeight * 0.85);
-    }
-    
-    // Show error if any
-    if (emailError !== "") {
-        fill(255, 80, 80);
-        textSize(14 * scaleRatio);
-        text(emailError, canvasWidth/2, canvasHeight * 0.9);
-    }
+    textStyle(BOLD);
+    text("PLAY AGAIN", canvasWidth * 0.85, canvasHeight * 0.95);
 }
 
 function keyPressed() {
@@ -730,6 +853,11 @@ function updateAndDrawBullets() {
             if (d < (bullet.width/2 + asteroid.width/2) * 0.7) {
                 // Remove bullet and asteroid
                 bullets.splice(i, 1);
+                
+                // Create EPIC explosion at alien ship location
+                createAlienExplosion(asteroid.x, asteroid.y);
+                
+                // Remove asteroid
                 asteroids.splice(j, 1);
                 
                 // Give points for destroying asteroid
@@ -1154,10 +1282,10 @@ function touchStarted() {
             }
         }
         
-        // Check if tapped on play again button
-        let playAgainX = canvasWidth/2;
+        // Check if tapped on play again button (now positioned at the bottom right)
+        let playAgainX = canvasWidth * 0.85;
         let playAgainY = canvasHeight * 0.95;
-        let playAgainW = 200 * scaleRatio;
+        let playAgainW = 180 * scaleRatio;
         let playAgainH = 40 * scaleRatio;
         
         if (mouseX > playAgainX - playAgainW/2 && mouseX < playAgainX + playAgainW/2 && 
@@ -1268,14 +1396,82 @@ function createExplosion(x, y, isCorrect) {
     explosions.push(explosion);
 }
 
+// New function to create an epic alien explosion
+function createAlienExplosion(x, y) {
+    // Create particles for the explosion
+    let particleCount = 80; // More particles than regular explosions
+    let explosion = {
+        x: x,
+        y: y,
+        particles: [],
+        timeCreated: millis(),
+        isAlien: true
+    };
+    
+    // Create particles with different velocities
+    for (let i = 0; i < particleCount; i++) {
+        let angle = random(TWO_PI);
+        let speed = random(2, 7) * scaleRatio; // Faster particles
+        
+        // Purple and orange colors for alien explosion
+        let colorChoice = random(1);
+        let r, g, b;
+        
+        if (colorChoice < 0.5) {
+            // Purple flames
+            r = random(150, 200);
+            g = random(0, 50);
+            b = random(200, 255);
+        } else {
+            // Orange fire
+            r = random(200, 255);
+            g = random(100, 180);
+            b = random(0, 30);
+        }
+        
+        // Add wave-like pattern with sine function
+        let waveFreq = random(0.1, 0.3);
+        let waveAmp = random(1, 3) * scaleRatio;
+        
+        explosion.particles.push({
+            vx: cos(angle) * speed,
+            vy: sin(angle) * speed,
+            size: random(4, 12) * scaleRatio, // Larger particles
+            color: [r, g, b],
+            alpha: 255,
+            rotation: random(TWO_PI),
+            waveFreq: waveFreq,
+            waveAmp: waveAmp
+        });
+    }
+    
+    // Also add a shockwave effect
+    for (let i = 0; i < 20; i++) {
+        let angle = i * TWO_PI / 20;
+        explosion.particles.push({
+            vx: cos(angle) * 3 * scaleRatio,
+            vy: sin(angle) * 3 * scaleRatio,
+            size: random(6, 15) * scaleRatio,
+            color: [255, 255, 255], // White shockwave
+            alpha: 200,
+            rotation: 0,
+            isShockwave: true,
+            expandSpeed: random(1.5, 2.5) * scaleRatio
+        });
+    }
+    
+    explosions.push(explosion);
+}
+
 // Function to update and draw all explosions
 function updateAndDrawExplosions() {
     for (let i = explosions.length - 1; i >= 0; i--) {
         let explosion = explosions[i];
         let timePassed = millis() - explosion.timeCreated;
         
-        // Remove explosion after 1 second
-        if (timePassed > 1000) {
+        // Remove explosion after 1.5 seconds for regular, 2.5 for alien
+        let duration = explosion.isAlien ? 2500 : 1000;
+        if (timePassed > duration) {
             explosions.splice(i, 1);
             continue;
         }
@@ -1284,21 +1480,69 @@ function updateAndDrawExplosions() {
         for (let j = 0; j < explosion.particles.length; j++) {
             let particle = explosion.particles[j];
             
-            // Calculate current position based on elapsed time
-            let x = explosion.x + (particle.vx * timePassed * 0.1);
-            let y = explosion.y + (particle.vy * timePassed * 0.1);
-            
-            // Decrease alpha over time
-            let alpha = 255 - (timePassed / 1000) * 255;
-            
-            // Draw particle
-            push();
-            translate(x, y);
-            rotate(particle.rotation + timePassed * 0.01);
-            fill(particle.color[0], particle.color[1], particle.color[2], alpha);
-            noStroke();
-            rect(0, 0, particle.size, particle.size);
-            pop();
+            if (particle.isShockwave) {
+                // Draw expanding shockwave
+                let expandFactor = 1 + (timePassed * 0.005 * particle.expandSpeed);
+                let waveAlpha = 255 - (timePassed / duration) * 255;
+                
+                push();
+                translate(explosion.x, explosion.y);
+                noFill();
+                stroke(particle.color[0], particle.color[1], particle.color[2], waveAlpha);
+                strokeWeight(2 * scaleRatio * (1 - timePassed/duration));
+                
+                // Draw shockwave circle
+                ellipse(0, 0, 
+                    particle.size * expandFactor * 10, 
+                    particle.size * expandFactor * 10);
+                pop();
+            } else {
+                // Calculate current position based on elapsed time
+                // For alien explosions, add sine wave movement for more dynamic effect
+                let xOffset = 0;
+                let yOffset = 0;
+                
+                if (explosion.isAlien && particle.waveFreq) {
+                    xOffset = sin(timePassed * particle.waveFreq) * particle.waveAmp;
+                    yOffset = cos(timePassed * particle.waveFreq * 0.7) * particle.waveAmp;
+                }
+                
+                let x = explosion.x + (particle.vx * timePassed * 0.1) + xOffset;
+                let y = explosion.y + (particle.vy * timePassed * 0.1) + yOffset;
+                
+                // Decrease alpha over time
+                let alpha = 255 - (timePassed / duration) * 255;
+                
+                // For alien explosions, make particles grow slightly then shrink
+                let sizeMultiplier = 1;
+                if (explosion.isAlien) {
+                    let normalizedTime = timePassed / duration;
+                    if (normalizedTime < 0.3) {
+                        // Grow during first 30% of time
+                        sizeMultiplier = map(normalizedTime, 0, 0.3, 0.5, 1.5);
+                    } else {
+                        // Shrink for the rest
+                        sizeMultiplier = map(normalizedTime, 0.3, 1, 1.5, 0.1);
+                    }
+                }
+                
+                // Draw particle
+                push();
+                translate(x, y);
+                rotate(particle.rotation + timePassed * 0.01);
+                fill(particle.color[0], particle.color[1], particle.color[2], alpha);
+                noStroke();
+                
+                // For alien particles, use different shapes
+                if (explosion.isAlien && random(1) < 0.3) {
+                    // Occasional triangle for more visual interest
+                    let size = particle.size * sizeMultiplier;
+                    triangle(0, -size, size/1.5, size/1.5, -size/1.5, size/1.5);
+                } else {
+                    rect(0, 0, particle.size * sizeMultiplier, particle.size * sizeMultiplier);
+                }
+                pop();
+            }
         }
     }
 } 
