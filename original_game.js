@@ -11,6 +11,7 @@
 // April 5, 2025 - Fixed iOS/iPhone compatibility issues with spaceship visibility and touch controls
 // April 6, 2025 - Emergency fixes for iOS spaceship visibility and controls
 // April 7, 2025 - Cleaned up iOS debug elements while preserving visibility fixes
+// April 8, 2025 - Improved mobile controls with virtual joystick and enhanced shoot button
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -123,6 +124,17 @@ let leftZone, rightZone, shootZone;
 let leftZoneActive = false;
 let rightZoneActive = false;
 let shootZoneActive = false;
+
+// Virtual joystick variables
+let joystickActive = false;
+let joystickX = 0;
+let joystickY = 0;
+let joystickBaseX = 0;
+let joystickBaseY = 0;
+let joystickThumbX = 0;
+let joystickThumbY = 0;
+let joystickRadius = 0;
+let joystickMoveX = 0; // Movement value from -1 to 1
 
 // Debug mode
 let debugMode = false;
@@ -1014,12 +1026,9 @@ function handlePlayerMovement() {
             spaceship.x += spaceship.speed;
         }
     } else {
-        // Touch controls for mobile
-        if (leftZoneActive) {
-            spaceship.x -= spaceship.speed;
-        }
-        if (rightZoneActive) {
-            spaceship.x += spaceship.speed;
+        // Use virtual joystick for movement
+        if (joystickActive) {
+            spaceship.x += joystickMoveX * spaceship.speed * 1.2; // Slightly faster with joystick
         }
     }
     
@@ -1455,146 +1464,145 @@ function setupTouchControls() {
     // Calculate safe area for iOS devices to avoid bottom notch/home indicator
     let bottomSafeArea = isIOSDevice ? 100 * scaleRatio : 0;
     
-    // On iOS, use simple left/right/shoot division
-    if (isIOSDevice) {
-        // Left movement zone (left third of screen)
-        leftZone = {
-            x: canvasWidth * 0.25,
-            y: canvasHeight * 0.5, // Use the middle half of the screen
-            width: canvasWidth * 0.5,
-            height: canvasHeight * 0.5
-        };
-        
-        // Right movement zone (right third of screen)
-        rightZone = {
-            x: canvasWidth * 0.75,
-            y: canvasHeight * 0.5, // Use the middle half of the screen
-            width: canvasWidth * 0.5,
-            height: canvasHeight * 0.5
-        };
-        
-        // Shoot button (bottom center, larger area)
-        shootZone = {
-            x: canvasWidth * 0.5,
-            y: canvasHeight - 80 * scaleRatio, // Position near bottom but above safe area
-            radius: 50 * scaleRatio
-        };
-    } else {
-        // Standard mobile controls for non-iOS
-        leftZone = {
-            x: canvasWidth * 0.25,
-            y: canvasHeight * 0.75,
-            width: canvasWidth * 0.5,
-            height: canvasHeight * 0.5
-        };
-        
-        rightZone = {
-            x: canvasWidth * 0.75,
-            y: canvasHeight * 0.75,
-            width: canvasWidth * 0.5,
-            height: canvasHeight * 0.5
-        };
-        
-        shootZone = {
-            x: canvasWidth * 0.5,
-            y: canvasHeight * 0.6,
-            radius: 100 * scaleRatio
-        };
-    }
+    // Set up virtual joystick dimensions
+    joystickBaseX = canvasWidth * 0.2;
+    joystickBaseY = canvasHeight - 100 * scaleRatio;
+    joystickThumbX = joystickBaseX;
+    joystickThumbY = joystickBaseY;
+    joystickRadius = 60 * scaleRatio;
     
-    console.log("Touch zones set up for", isIOSDevice ? "iOS" : "mobile", "Canvas size:", canvasWidth, "x", canvasHeight);
+    // Set up shoot button - now always positioned on the right side
+    shootZone = {
+        x: canvasWidth * 0.8,
+        y: canvasHeight - 100 * scaleRatio,
+        radius: 50 * scaleRatio
+    };
+    
+    console.log("Touch controls set up for", isIOSDevice ? "iOS" : "mobile", "Canvas size:", canvasWidth, "x", canvasHeight);
 }
 
 function checkTouchZones() {
     // Reset active states
-    leftZoneActive = false;
-    rightZoneActive = false;
+    shootZoneActive = false;
     
-    // Track if we should trigger shooting
-    let shouldShoot = false;
-    
-    // For iOS debugging - only log touches when in debug mode
-    if (debugMode && isIOSDevice) {
-        console.log("Touches:", touches.length);
-        for (let i = 0; i < touches.length; i++) {
-            console.log(`Touch ${i}: x=${touches[i].x}, y=${touches[i].y}`);
-        }
+    // Reset joystick if no touches
+    if (touches.length === 0) {
+        joystickActive = false;
+        joystickMoveX = 0;
+        joystickThumbX = joystickBaseX;
+        joystickThumbY = joystickBaseY;
     }
     
-    // Check each touch point
+    // Process each touch
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
-        // On iOS devices, keep simple touch controls - no priority checking
-        if (isIOSDevice) {
-            // Left side of screen for left movement
-            if (touch.x < canvasWidth * 0.33) {
-                leftZoneActive = true;
-            }
+        // Check for joystick control
+        let distToJoystick = dist(touch.x, touch.y, joystickBaseX, joystickBaseY);
+        
+        // If touch is near joystick base or joystick is already active with this touch
+        if (distToJoystick < joystickRadius * 2.5 || 
+            (joystickActive && dist(touch.x, touch.y, joystickThumbX, joystickThumbY) < joystickRadius * 3)) {
             
-            // Right side of screen for right movement
-            if (touch.x > canvasWidth * 0.66) {
-                rightZoneActive = true;
-            }
+            joystickActive = true;
             
-            // Center bottom area for shooting
-            let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
-            if (d < shootZone.radius || 
-                (touch.x > canvasWidth * 0.33 && touch.x < canvasWidth * 0.66 && touch.y > canvasHeight * 0.5)) {
-                shouldShoot = true;
-            }
-        } else {
-            // Standard controls for other mobile devices
-            let touchInShootZone = false;
+            // Calculate joystick thumb position, limited by radius
+            let angle = atan2(touch.y - joystickBaseY, touch.x - joystickBaseX);
+            let distance = min(distToJoystick, joystickRadius);
             
-            // Check shoot zone first (center area)
-            let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
-            if (d < shootZone.radius) {
-                touchInShootZone = true;
-                shouldShoot = true;
-            }
+            joystickThumbX = joystickBaseX + cos(angle) * distance;
+            joystickThumbY = joystickBaseY + sin(angle) * distance;
             
-            // Check left zone - only if this touch isn't already used for shooting
-            if (!touchInShootZone && touch.x < canvasWidth * 0.5) {
-                leftZoneActive = true;
-            }
+            // Calculate movement amount (-1 to 1)
+            joystickMoveX = (joystickThumbX - joystickBaseX) / joystickRadius;
             
-            // Check right zone - only if this touch isn't already used for shooting
-            if (!touchInShootZone && touch.x > canvasWidth * 0.5) {
-                rightZoneActive = true;
+            // Apply deadzone for small movements
+            if (abs(joystickMoveX) < 0.2) {
+                joystickMoveX = 0;
+            }
+        }
+        
+        // Check for shoot button
+        let distToShoot = dist(touch.x, touch.y, shootZone.x, shootZone.y);
+        if (distToShoot < shootZone.radius) {
+            shootZoneActive = true;
+            
+            // Shoot if not on cooldown
+            if (bulletCooldown === 0 && gameState === "playing") {
+                shoot();
+                
+                // Add haptic feedback for all devices if supported
+                if ('vibrate' in navigator) {
+                    try {
+                        navigator.vibrate(10); // Short vibration
+                    } catch (e) {
+                        console.log("Vibration not supported");
+                    }
+                }
             }
         }
     }
     
-    // Shoot if touch detected in shoot zone and not on cooldown
-    if (shouldShoot && bulletCooldown === 0 && gameState === "playing") {
-        shoot();
-    }
+    // Draw joystick and shoot button
+    drawMobileControls();
+}
+
+function drawMobileControls() {
+    if (!isMobileDevice || gameState !== "playing") return;
     
-    // Debug visualization - only when debug mode is actually enabled
-    if (debugMode) {
-        noFill();
-        strokeWeight(2);
-        
-        // Draw spaceship bounds for debugging
-        stroke(255, 255, 0);
-        rect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
-        
-        // Left zone
-        if (leftZoneActive) stroke(0, 255, 0);
-        else stroke(255, 0, 0);
-        rect(leftZone.x, leftZone.y, leftZone.width, leftZone.height);
-        
-        // Right zone
-        if (rightZoneActive) stroke(0, 255, 0);
-        else stroke(255, 0, 0);
-        rect(rightZone.x, rightZone.y, rightZone.width, rightZone.height);
-        
-        // Shoot zone
-        if (shouldShoot) stroke(0, 255, 0);
-        else stroke(255, 0, 0);
-        ellipse(shootZone.x, shootZone.y, shootZone.radius * 2);
+    // Draw virtual joystick base
+    push();
+    noStroke();
+    fill(255, 255, 255, 40);
+    ellipse(joystickBaseX, joystickBaseY, joystickRadius * 2, joystickRadius * 2);
+    
+    // Draw joystick thumb with visual feedback
+    if (joystickActive) {
+        stroke(100, 200, 255);
+        strokeWeight(2 * scaleRatio);
+        fill(100, 200, 255, 180);
+    } else {
+        stroke(255, 255, 255, 100);
+        strokeWeight(1 * scaleRatio);
+        fill(255, 255, 255, 100);
     }
+    ellipse(joystickThumbX, joystickThumbY, joystickRadius, joystickRadius);
+    
+    // Add joystick labels
+    textAlign(CENTER, CENTER);
+    textSize(14 * scaleRatio);
+    fill(255, 255, 255, 150);
+    text("MOVE", joystickBaseX, joystickBaseY - joystickRadius - 20 * scaleRatio);
+    
+    // Draw shoot button with visual feedback
+    if (shootZoneActive || bulletCooldown > 0) {
+        fill(255, 80, 80, 220);
+        stroke(255, 180, 180);
+        strokeWeight(3 * scaleRatio);
+    } else {
+        fill(255, 80, 80, 180);
+        stroke(255, 180, 180, 150);
+        strokeWeight(2 * scaleRatio);
+    }
+    ellipse(shootZone.x, shootZone.y, shootZone.radius * 2, shootZone.radius * 2);
+    
+    // Shoot button label
+    fill(255);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(18 * scaleRatio);
+    text("FIRE", shootZone.x, shootZone.y);
+    
+    // Show reload indicator if on cooldown
+    if (bulletCooldown > 0) {
+        let percentage = (bulletCooldownTime - bulletCooldown) / bulletCooldownTime;
+        noFill();
+        stroke(255);
+        strokeWeight(5 * scaleRatio);
+        arc(shootZone.x, shootZone.y, shootZone.radius * 1.5, shootZone.radius * 1.5, 
+            -HALF_PI, -HALF_PI + TWO_PI * percentage);
+    }
+    pop();
 }
 
 function touchStarted() {
@@ -2158,18 +2166,19 @@ function shareOnLinkedIn() {
     console.log("Sharing on LinkedIn:", shareUrl);
 }
 
-// New function to draw a dedicated shoot button for iOS
 function drawIOSShootButton() {
-    // Draw a visible shoot button at the center bottom
-    fill(255, 100, 100, 150);
-    stroke(255, 200, 200);
-    strokeWeight(2 * scaleRatio);
-    ellipse(canvasWidth/2, canvasHeight - 80 * scaleRatio, 100 * scaleRatio, 100 * scaleRatio);
-    
-    // Button text
-    fill(255);
-    noStroke();
-    textAlign(CENTER, CENTER);
-    textSize(16 * scaleRatio);
-    text("SHOOT", canvasWidth/2, canvasHeight - 80 * scaleRatio);
+    // This function is no longer needed as we have the improved controls system
+    // The controls are now handled by drawMobileControls instead
+}
+
+// Add extra touch handling for better mobile experience
+function touchEnded() {
+    // Reset joystick when touch ends
+    if (isMobileDevice && gameState === "playing") {
+        joystickActive = false;
+        joystickMoveX = 0;
+        joystickThumbX = joystickBaseX;
+        joystickThumbY = joystickBaseY;
+    }
+    return false;
 } 
