@@ -396,10 +396,17 @@ function drawLevelCompletedScreen() {
     // Draw score notifications so they're visible after hitting the correct API
     updateAndDrawScoreNotifications();
     
-    // Level completed message
+    // Level completed message with personalization
     fill(255);
     textSize(30 * scaleRatio);
-    text("Correct!", canvasWidth/2, canvasHeight/3);
+    
+    // Personalized message if player entered their name
+    if (playerName.trim() !== "") {
+        text("That's correct, " + playerName + "!", canvasWidth/2, canvasHeight/3 - 20 * scaleRatio);
+        text("Well done!", canvasWidth/2, canvasHeight/3 + 20 * scaleRatio);
+    } else {
+        text("Correct!", canvasWidth/2, canvasHeight/3);
+    }
     
     // Explanation
     fill(200, 255, 200);
@@ -463,10 +470,16 @@ function drawWinScreen() {
     textAlign(CENTER, CENTER);
     text("CERTIFICATE OF ACHIEVEMENT", canvasWidth/2, canvasHeight * 0.2);
     
+    // Move score to just below the title, above the player's name
+    textStyle(BOLD);
+    textSize(28 * scaleRatio);
+    fill(20, 150, 20);
+    text(score + " points", canvasWidth/2, canvasHeight * 0.26);
+    
     // Decorative line
     stroke(180, 160, 60);
     strokeWeight(2 * scaleRatio);
-    line(canvasWidth * 0.25, canvasHeight * 0.26, canvasWidth * 0.75, canvasHeight * 0.26);
+    line(canvasWidth * 0.25, canvasHeight * 0.32, canvasWidth * 0.75, canvasHeight * 0.32);
     
     // Main text - updated with player name if provided
     noStroke();
@@ -475,50 +488,40 @@ function drawWinScreen() {
     textStyle(NORMAL);
     
     if (playerName.trim() !== "") {
-        text("This certifies that", canvasWidth/2, canvasHeight * 0.32);
+        text("This certifies that", canvasWidth/2, canvasHeight * 0.38);
         
         // Player name in larger, more prominent text
         textStyle(BOLD);
         textSize(26 * scaleRatio);
-        text(playerName, canvasWidth/2, canvasHeight * 0.38);
+        text(playerName, canvasWidth/2, canvasHeight * 0.44);
         
         // Rest of certificate text
         textStyle(NORMAL);
         textSize(18 * scaleRatio);
-        text("is an", canvasWidth/2, canvasHeight * 0.44);
+        text("is an", canvasWidth/2, canvasHeight * 0.5);
         
         // API Champion text
         textStyle(ITALIC);
         textSize(24 * scaleRatio);
-        text("API Champion", canvasWidth/2, canvasHeight * 0.5);
+        text("API Champion", canvasWidth/2, canvasHeight * 0.56);
     } else {
-        text("This certifies that you are an", canvasWidth/2, canvasHeight * 0.32);
+        text("This certifies that you are an", canvasWidth/2, canvasHeight * 0.38);
         
         // Player designation
         textStyle(ITALIC);
         textSize(24 * scaleRatio);
-        text("API Champion", canvasWidth/2, canvasHeight * 0.38);
+        text("API Champion", canvasWidth/2, canvasHeight * 0.44);
     }
     
     // Description
     textStyle(NORMAL);
     textSize(16 * scaleRatio);
-    text("has successfully demonstrated exceptional understanding of", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.56 : canvasHeight * 0.45);
+    text("has successfully demonstrated exceptional understanding of", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.62 : canvasHeight * 0.5);
     
     // What they learned
     textStyle(BOLD);
     textSize(20 * scaleRatio);
-    text("ADP Marketplace APIs", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.62 : canvasHeight * 0.51);
-    
-    // Score
-    textStyle(NORMAL);
-    textSize(16 * scaleRatio);
-    text("with a score of", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.68 : canvasHeight * 0.58);
-    
-    textStyle(BOLD);
-    textSize(28 * scaleRatio);
-    fill(20, 150, 20);
-    text(score + " points", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.74 : canvasHeight * 0.65);
+    text("ADP Marketplace APIs", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.68 : canvasHeight * 0.56);
     
     // Email collection form - moved down to provide more space from the seal
     drawEmailForm();
