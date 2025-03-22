@@ -414,11 +414,14 @@ function draw() {
             textAlign(RIGHT, TOP);
             text("APIs to win: " + (targetAPICount - correctAPICount), canvasWidth - 20 * scaleRatio, 20 * scaleRatio);
             
-            // Display target API info
+            // Display target API info at bottom of screen
             textAlign(LEFT, BOTTOM);
             fill(255, 255, 100);
             textSize(14 * scaleRatio);
             text("Target API: " + targetAPI, 20 * scaleRatio, canvasHeight - 20 * scaleRatio);
+            
+            // NEW: Draw the prominent API objective display
+            drawAPIObjective();
             
             // Check win condition
             if (correctAPICount >= targetAPICount) {
@@ -2600,12 +2603,20 @@ function drawSpaceship() {
     // Enhanced spaceship design
     translate(spaceship.x, spaceship.y);
     
+    // Add an outline glow for better visibility, especially on mobile
+    if (isMobileDevice) {
+        // Extra visibility for mobile devices
+        fill(0, 255, 0, 100);
+        noStroke();
+        ellipse(0, 0, spaceship.width * 1.5, spaceship.height * 1.5);
+    }
+    
     // Main body
     fill(0, 220, 0);
     stroke(0, 150, 0);
-    strokeWeight(2 * scaleRatio);
+    strokeWeight(max(2 * scaleRatio, 2)); // Ensure minimum stroke weight for visibility
     
-    // Ship body - triangle shape
+    // Ship body - triangle shape with clearer outline
     beginShape();
     vertex(0, -spaceship.height/2);  // Nose
     vertex(-spaceship.width/2, spaceship.height/3);  // Left corner
@@ -2615,25 +2626,48 @@ function drawSpaceship() {
     vertex(spaceship.width/2, spaceship.height/3);  // Right corner
     endShape(CLOSE);
     
-    // Cockpit
-    fill(150, 255, 150, 150);
+    // Cockpit with stronger color on mobile
+    if (isMobileDevice) {
+        fill(100, 255, 100, 200); // More opaque on mobile
+    } else {
+        fill(150, 255, 150, 150);
+    }
     noStroke();
     ellipse(0, -spaceship.height/6, spaceship.width/3, spaceship.height/3);
     
-    // Engines
-    fill(255, 100, 0, 200);
+    // Engines with brighter colors on mobile
+    if (isMobileDevice) {
+        fill(255, 150, 50, 250); // Brighter orange on mobile
+    } else {
+        fill(255, 100, 0, 200);
+    }
+    
     // Left engine
     ellipse(-spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
     // Right engine
     ellipse(spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
     
-    // Engine glow - pulsating effect
+    // Engine glow - pulsating effect (enhanced for mobile)
     let pulse = sin(frameCount * 0.2) * 3 * scaleRatio;
-    fill(255, 150, 0, 100);
-    // Left engine glow
-    ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
-    // Right engine glow
-    ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    
+    if (isMobileDevice) {
+        fill(255, 200, 0, 180); // Brighter glow on mobile
+        // Larger engine glow for mobile
+        ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/3, spaceship.height/3);
+        ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/3, spaceship.height/3);
+    } else {
+        fill(255, 150, 0, 100);
+        ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+        ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    }
+    
+    // Debug outline for visibility troubleshooting
+    if (debugMode) {
+        stroke(255, 0, 255);
+        strokeWeight(2);
+        noFill();
+        rect(0, 0, spaceship.width, spaceship.height);
+    }
     
     pop();
 }
@@ -2753,5 +2787,43 @@ function drawAlienShip(x, y, width, height) {
     strokeWeight(1 * scaleRatio);
     line(x - width/2, y, x + width/2, y);
     line(x, y - height/2, x, y + height/2);
+    pop();
+}
+
+// Add this function for a more prominent objective display
+function drawAPIObjective() {
+    push();
+    // Semi-transparent background for better readability
+    fill(0, 0, 0, 150);
+    noStroke();
+    rectMode(CENTER);
+    
+    // Position at top center of the screen
+    let boxWidth = isMobileDevice ? canvasWidth * 0.9 : canvasWidth * 0.6;
+    let objectiveHeight = 40 * scaleRatio;
+    let objectiveX = canvasWidth / 2;
+    let objectiveY = 30 * scaleRatio;
+    
+    // Draw rounded rectangle background
+    rect(objectiveX, objectiveY, boxWidth, objectiveHeight, 10 * scaleRatio);
+    
+    // Objective text with highlighting of the target API
+    textAlign(CENTER, CENTER);
+    textSize(Math.max(16 * scaleRatio, 14)); // Minimum legible size
+    
+    let objective = "TARGET THE ";
+    
+    // Draw the objective text in parts to highlight the target API
+    fill(255);
+    text(objective, objectiveX, objectiveY);
+    
+    // Measure text width to position the API name
+    let textW = textWidth(objective);
+    let apiX = objectiveX + textW/2 + textWidth(targetAPI)/2;
+    
+    // Highlight the target API
+    fill(255, 255, 0); // Yellow for emphasis
+    text(targetAPI, apiX, objectiveY);
+    
     pop();
 }
