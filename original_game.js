@@ -9,6 +9,7 @@
 // April 3, 2025 - Added personalized certificates and LinkedIn sharing
 // April 4, 2025 - Added anonymous analytics tracking
 // April 5, 2025 - Fixed iOS/iPhone compatibility issues with spaceship visibility and touch controls
+// April 6, 2025 - Emergency fixes for iOS spaceship visibility and controls
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -204,7 +205,17 @@ function draw() {
             updateAndDrawBullets();
             updateAndDrawAPIs();
             updateAndDrawAsteroids();
+            
+            // Draw spaceship - iOS needs special handling
             drawSpaceship();
+            
+            // iOS DEBUG: Draw a bright outline around the spaceship area to verify position
+            if (isIOSDevice) {
+                noFill();
+                stroke(255, 255, 0);
+                strokeWeight(4 * scaleRatio);
+                rect(spaceship.x, spaceship.y, spaceship.width + 20 * scaleRatio, spaceship.height + 20 * scaleRatio);
+            }
             
             // Update and draw explosions
             updateAndDrawExplosions();
@@ -229,6 +240,11 @@ function draw() {
             
             // Draw heads-up display
             drawHUD();
+            
+            // For iOS, draw a shoot button for better visual feedback
+            if (isIOSDevice) {
+                drawIOSShootButton();
+            }
             break;
             
         case "levelCompleted":
@@ -251,14 +267,18 @@ function draw() {
     }
     
     // Debug info
-    if (debugMode) {
+    if (debugMode || isIOSDevice) { // Always show debug info on iOS for now
         fill(255);
         textAlign(LEFT, TOP);
-        textSize(14);
+        textSize(14 * scaleRatio);
         text("FPS: " + Math.floor(frameRate()), 10, 10);
         text("Game State: " + gameState, 10, 30);
         text("Level: " + (currentLevel + 1) + "/" + levels.length, 10, 50);
         text("Score: " + score, 10, 70);
+        text("Device: " + (isMobileDevice ? (isIOSDevice ? "iOS" : "Mobile") : "Desktop"), 10, 90);
+        text("Canvas: " + canvasWidth + "×" + canvasHeight, 10, 110);
+        text("Scale: " + scaleRatio.toFixed(2), 10, 130);
+        text("Ship: " + Math.floor(spaceship.x) + "," + Math.floor(spaceship.y), 10, 150);
     }
 }
 
@@ -1292,36 +1312,75 @@ function drawSpaceship() {
     // Enhanced spaceship design
     translate(spaceship.x, spaceship.y);
     
-    // Main body
-    fill(0, 220, 0);
-    stroke(0, 150, 0);
-    strokeWeight(2 * scaleRatio);
-    
-    // Ship body
-    beginShape();
-    vertex(0, -spaceship.height/2);
-    vertex(-spaceship.width/2, spaceship.height/3);
-    vertex(-spaceship.width/4, spaceship.height/4);
-    vertex(0, spaceship.height/2);
-    vertex(spaceship.width/4, spaceship.height/4);
-    vertex(spaceship.width/2, spaceship.height/3);
-    endShape(CLOSE);
-    
-    // Cockpit
-    fill(150, 255, 150, 150);
-    noStroke();
-    ellipse(0, -spaceship.height/6, spaceship.width/3, spaceship.height/3);
-    
-    // Engines
-    fill(255, 100, 0, 200);
-    ellipse(-spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
-    ellipse(spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
-    
-    // Engine glow - pulsating
-    let pulse = sin(frameCount * 0.2) * 3 * scaleRatio;
-    fill(255, 150, 0, 100);
-    ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
-    ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    // On iOS, make the spaceship more vibrant and larger
+    if (isIOSDevice) {
+        // Main body - brighter green for iOS visibility
+        fill(50, 255, 50);
+        stroke(0, 200, 0);
+        strokeWeight(3 * scaleRatio);
+        
+        // Ship body
+        beginShape();
+        vertex(0, -spaceship.height/2);
+        vertex(-spaceship.width/2, spaceship.height/3);
+        vertex(-spaceship.width/4, spaceship.height/4);
+        vertex(0, spaceship.height/2);
+        vertex(spaceship.width/4, spaceship.height/4);
+        vertex(spaceship.width/2, spaceship.height/3);
+        endShape(CLOSE);
+        
+        // Cockpit - more visible
+        fill(200, 255, 200, 200);
+        stroke(0, 200, 0);
+        strokeWeight(1 * scaleRatio);
+        ellipse(0, -spaceship.height/6, spaceship.width/2.5, spaceship.height/2.5);
+        
+        // Engines - brighter for iOS visibility
+        fill(255, 150, 0, 230);
+        stroke(200, 100, 0);
+        strokeWeight(1 * scaleRatio);
+        ellipse(-spaceship.width/4, spaceship.height/3, spaceship.width/4, spaceship.height/5);
+        ellipse(spaceship.width/4, spaceship.height/3, spaceship.width/4, spaceship.height/5);
+        
+        // Engine glow - more prominent pulsating
+        let pulse = sin(frameCount * 0.2) * 4 * scaleRatio;
+        fill(255, 200, 0, 150);
+        noStroke();
+        ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/3, spaceship.height/3);
+        ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/3, spaceship.height/3);
+    } else {
+        // Original spaceship design for non-iOS
+        // Main body
+        fill(0, 220, 0);
+        stroke(0, 150, 0);
+        strokeWeight(2 * scaleRatio);
+        
+        // Ship body
+        beginShape();
+        vertex(0, -spaceship.height/2);
+        vertex(-spaceship.width/2, spaceship.height/3);
+        vertex(-spaceship.width/4, spaceship.height/4);
+        vertex(0, spaceship.height/2);
+        vertex(spaceship.width/4, spaceship.height/4);
+        vertex(spaceship.width/2, spaceship.height/3);
+        endShape(CLOSE);
+        
+        // Cockpit
+        fill(150, 255, 150, 150);
+        noStroke();
+        ellipse(0, -spaceship.height/6, spaceship.width/3, spaceship.height/3);
+        
+        // Engines
+        fill(255, 100, 0, 200);
+        ellipse(-spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
+        ellipse(spaceship.width/4, spaceship.height/3, spaceship.width/5, spaceship.height/6);
+        
+        // Engine glow - pulsating
+        let pulse = sin(frameCount * 0.2) * 3 * scaleRatio;
+        fill(255, 150, 0, 100);
+        ellipse(-spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+        ellipse(spaceship.width/4, spaceship.height/3 + pulse, spaceship.width/4, spaceship.height/4);
+    }
     
     pop();
 }
@@ -1401,32 +1460,56 @@ function setupTouchControls() {
     if (!isMobileDevice) return;
     
     // Calculate safe area for iOS devices to avoid bottom notch/home indicator
-    let bottomSafeArea = isIOSDevice ? 80 * scaleRatio : 0;
+    let bottomSafeArea = isIOSDevice ? 100 * scaleRatio : 0;
     
-    // Left movement zone (left half of screen)
-    leftZone = {
-        x: canvasWidth * 0.25,
-        y: canvasHeight * 0.75,
-        width: canvasWidth * 0.5,
-        height: canvasHeight * 0.5
-    };
+    // On iOS, use simple left/right/shoot division
+    if (isIOSDevice) {
+        // Left movement zone (left third of screen)
+        leftZone = {
+            x: canvasWidth * 0.25,
+            y: canvasHeight * 0.5, // Use the middle half of the screen
+            width: canvasWidth * 0.5,
+            height: canvasHeight * 0.5
+        };
+        
+        // Right movement zone (right third of screen)
+        rightZone = {
+            x: canvasWidth * 0.75,
+            y: canvasHeight * 0.5, // Use the middle half of the screen
+            width: canvasWidth * 0.5,
+            height: canvasHeight * 0.5
+        };
+        
+        // Shoot button (bottom center, larger area)
+        shootZone = {
+            x: canvasWidth * 0.5,
+            y: canvasHeight - 80 * scaleRatio, // Position near bottom but above safe area
+            radius: 50 * scaleRatio
+        };
+    } else {
+        // Standard mobile controls for non-iOS
+        leftZone = {
+            x: canvasWidth * 0.25,
+            y: canvasHeight * 0.75,
+            width: canvasWidth * 0.5,
+            height: canvasHeight * 0.5
+        };
+        
+        rightZone = {
+            x: canvasWidth * 0.75,
+            y: canvasHeight * 0.75,
+            width: canvasWidth * 0.5,
+            height: canvasHeight * 0.5
+        };
+        
+        shootZone = {
+            x: canvasWidth * 0.5,
+            y: canvasHeight * 0.6,
+            radius: 100 * scaleRatio
+        };
+    }
     
-    // Right movement zone (right half of screen)
-    rightZone = {
-        x: canvasWidth * 0.75,
-        y: canvasHeight * 0.75,
-        width: canvasWidth * 0.5,
-        height: canvasHeight * 0.5
-    };
-    
-    // Shoot zone (entire bottom half of screen)
-    shootZone = {
-        x: canvasWidth * 0.5,
-        y: canvasHeight * 0.6,
-        radius: 100 * scaleRatio // Increased touch area for better response
-    };
-    
-    console.log("Touch zones set up for mobile. Canvas size:", canvasWidth, "x", canvasHeight);
+    console.log("Touch zones set up for", isIOSDevice ? "iOS" : "mobile", "Canvas size:", canvasWidth, "x", canvasHeight);
 }
 
 function checkTouchZones() {
@@ -1437,28 +1520,56 @@ function checkTouchZones() {
     // Track if we should trigger shooting
     let shouldShoot = false;
     
+    // For iOS, let's log all touches for debugging
+    if (isIOSDevice) {
+        console.log("Touches:", touches.length);
+        for (let i = 0; i < touches.length; i++) {
+            console.log(`Touch ${i}: x=${touches[i].x}, y=${touches[i].y}`);
+        }
+    }
+    
     // Check each touch point
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
-        // For iOS, we need to check if any touch is in the shooting area
-        let touchInShootZone = false;
-        
-        // Check shoot zone first (center area)
-        let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
-        if (d < shootZone.radius) {
-            touchInShootZone = true;
-            shouldShoot = true;
-        }
-        
-        // Check left zone - only if this touch isn't already used for shooting
-        if (!touchInShootZone && touch.x < canvasWidth * 0.5) {
-            leftZoneActive = true;
-        }
-        
-        // Check right zone - only if this touch isn't already used for shooting
-        if (!touchInShootZone && touch.x > canvasWidth * 0.5) {
-            rightZoneActive = true;
+        // On iOS devices, keep simple touch controls - no priority checking
+        if (isIOSDevice) {
+            // Left side of screen for left movement
+            if (touch.x < canvasWidth * 0.33) {
+                leftZoneActive = true;
+            }
+            
+            // Right side of screen for right movement
+            if (touch.x > canvasWidth * 0.66) {
+                rightZoneActive = true;
+            }
+            
+            // Center bottom area for shooting
+            let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
+            if (d < shootZone.radius || 
+                (touch.x > canvasWidth * 0.33 && touch.x < canvasWidth * 0.66 && touch.y > canvasHeight * 0.5)) {
+                shouldShoot = true;
+            }
+        } else {
+            // Standard controls for other mobile devices
+            let touchInShootZone = false;
+            
+            // Check shoot zone first (center area)
+            let d = dist(touch.x, touch.y, shootZone.x, shootZone.y);
+            if (d < shootZone.radius) {
+                touchInShootZone = true;
+                shouldShoot = true;
+            }
+            
+            // Check left zone - only if this touch isn't already used for shooting
+            if (!touchInShootZone && touch.x < canvasWidth * 0.5) {
+                leftZoneActive = true;
+            }
+            
+            // Check right zone - only if this touch isn't already used for shooting
+            if (!touchInShootZone && touch.x > canvasWidth * 0.5) {
+                rightZoneActive = true;
+            }
         }
     }
     
@@ -1467,8 +1578,8 @@ function checkTouchZones() {
         shoot();
     }
     
-    // Debug visualization
-    if (debugMode) {
+    // Debug visualization - always enabled for iOS temporarily
+    if (debugMode || isIOSDevice) {
         noFill();
         strokeWeight(2);
         
@@ -1490,15 +1601,6 @@ function checkTouchZones() {
         if (shouldShoot) stroke(0, 255, 0);
         else stroke(255, 0, 0);
         ellipse(shootZone.x, shootZone.y, shootZone.radius * 2);
-        
-        // Show device info
-        fill(255);
-        noStroke();
-        textAlign(LEFT, TOP);
-        textSize(14 * scaleRatio);
-        text("Device: " + (isMobileDevice ? (isIOSDevice ? "iOS" : "Mobile") : "Desktop"), 10, 90);
-        text("Canvas: " + canvasWidth + "×" + canvasHeight, 10, 110);
-        text("Scale: " + scaleRatio.toFixed(2), 10, 130);
     }
 }
 
@@ -1649,17 +1751,20 @@ function resetGame() {
     currentLevel = 0;
     
     // Calculate the proper spaceship position for all devices
-    // For iOS, ensure it's not too close to the bottom edge
+    // For iOS, ensure it's MUCH higher on the screen
     let spaceshipYPos = isIOSDevice ? 
-        canvasHeight - 100 * scaleRatio : // Higher position for iOS
+        canvasHeight - 200 * scaleRatio : // Much higher position for iOS
         canvasHeight - 50 * scaleRatio;   // Standard position
     
-    // Reset spaceship
+    // Reset spaceship - make it larger on iOS for better visibility
+    let shipWidth = isIOSDevice ? 70 * scaleRatio : 50 * scaleRatio;
+    let shipHeight = isIOSDevice ? 60 * scaleRatio : 40 * scaleRatio;
+    
     spaceship = {
         x: canvasWidth / 2,
         y: spaceshipYPos,
-        width: 50 * scaleRatio,
-        height: 40 * scaleRatio,
+        width: shipWidth,
+        height: shipHeight,
         speed: 5 * scaleRatio
     };
     
@@ -2058,4 +2163,20 @@ function shareOnLinkedIn() {
     incrementCounter('linkedin_shares');
     
     console.log("Sharing on LinkedIn:", shareUrl);
+}
+
+// New function to draw a dedicated shoot button for iOS
+function drawIOSShootButton() {
+    // Draw a visible shoot button at the center bottom
+    fill(255, 100, 100, 150);
+    stroke(255, 200, 200);
+    strokeWeight(2 * scaleRatio);
+    ellipse(canvasWidth/2, canvasHeight - 80 * scaleRatio, 100 * scaleRatio, 100 * scaleRatio);
+    
+    // Button text
+    fill(255);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(16 * scaleRatio);
+    text("SHOOT", canvasWidth/2, canvasHeight - 80 * scaleRatio);
 } 
