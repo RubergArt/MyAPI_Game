@@ -49,7 +49,7 @@
             font-family: Arial, sans-serif;
             text-align: center;
             font-size: 18px;
-            z-index: 100;
+            z-index: 1000; /* Higher z-index to ensure it's on top */
         }
         #errorMessage {
             position: fixed;
@@ -62,7 +62,7 @@
             font-size: 16px;
             max-width: 80%;
             display: none;
-            z-index: 100;
+            z-index: 1000; /* Higher z-index to ensure it's on top */
         }
         #minimalGameLink {
             position: fixed;
@@ -76,20 +76,49 @@
             text-decoration: underline;
             cursor: pointer;
             display: none;
-            z-index: 100;
+            z-index: 1000; /* Higher z-index to ensure it's on top */
         }
     </style>
     
     <!-- Ensure game script loads after HTML structure is ready -->
     <script>
-        // Hide loading message when setup is complete
+        // Game setup and loading state tracking
         window.gameSetupComplete = false;
+        window.gameLoading = true;
+        
+        // Improved hideLoadingMessages function with logging
         window.hideLoadingMessages = function() {
-            document.getElementById('loadingMessage').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('minimalGameLink').style.display = 'none';
+            console.log("hideLoadingMessages called");
+            
+            // Find all elements (with error handling)
+            var loadingEl = document.getElementById('loadingMessage');
+            var errorEl = document.getElementById('errorMessage');
+            var minimalEl = document.getElementById('minimalGameLink');
+            
+            // Hide them all
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (errorEl) errorEl.style.display = 'none';
+            if (minimalEl) minimalEl.style.display = 'none';
+            
+            // Mark game as loaded
             window.gameSetupComplete = true;
+            window.gameLoading = false;
+            
+            console.log("All loading messages hidden, game marked as setup complete");
         };
+        
+        // Directly attach to the document for additional reliability
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, attaching p5 ready check");
+            
+            // Check if p5 is ready every 100ms
+            var p5ReadyCheck = setInterval(function() {
+                if (window.p5) {
+                    console.log("p5 detected as ready");
+                    clearInterval(p5ReadyCheck);
+                }
+            }, 100);
+        });
     </script>
     
     <!-- Load our sketch file -->
@@ -110,6 +139,8 @@
     <script>
         // Show appropriate instructions based on device
         window.onload = function() {
+            console.log("Window loaded");
+            
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                 document.getElementById('mobileInstructions').style.display = 'block';
             } else {
@@ -117,18 +148,40 @@
             }
             
             console.log("Game loader initialized");
+            
+            // Try to clear messages if game is already loaded (rare race condition)
+            if (window.gameSetupComplete) {
+                window.hideLoadingMessages();
+            }
         };
         
-        // Fallback timer - if game doesn't start within 5 seconds, show error and minimal game link
-        setTimeout(function() {
+        // Improved fallback timer - checks multiple times if game doesn't start
+        var loadingChecks = 0;
+        var maxLoadingChecks = 3;
+        
+        function checkGameLoaded() {
+            loadingChecks++;
+            console.log("Checking if game loaded (attempt " + loadingChecks + ")");
+            
             // Check if p5 canvas exists AND setup is complete
-            if (document.getElementsByTagName('canvas').length === 0 || !window.gameSetupComplete) {
+            var canvasExists = document.getElementsByTagName('canvas').length > 0;
+            
+            if (canvasExists && window.gameSetupComplete) {
+                console.log("Game confirmed as loaded - canvas found and setup complete");
+                window.hideLoadingMessages();
+            } else if (loadingChecks >= maxLoadingChecks) {
+                console.error("Game failed to load after " + maxLoadingChecks + " attempts");
                 document.getElementById('loadingMessage').style.display = 'none';
                 document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('minimalGameLink').style.display = 'block';
-                console.error("Game failed to load - no canvas detected or setup didn't complete after timeout");
+            } else {
+                // Schedule another check in 2 seconds
+                setTimeout(checkGameLoaded, 2000);
             }
-        }, 5000);
+        }
+        
+        // Start checking after 2 seconds
+        setTimeout(checkGameLoaded, 2000);
     </script>
 </body>
 </html>

@@ -129,6 +129,23 @@ function setup() {
     
     console.log("Device detected as:", isMobileDevice ? "mobile" : "desktop");
     
+    // Explicitly hide loading messages early
+    if (typeof window !== 'undefined' && window.hideLoadingMessages) {
+        window.hideLoadingMessages();
+        console.log("Early hideLoadingMessages called");
+    } else if (typeof window !== 'undefined' && window.document) {
+        // Direct DOM manipulation if function not available
+        var loadingMsg = document.getElementById('loadingMessage');
+        var errorMsg = document.getElementById('errorMessage');
+        var minimalLink = document.getElementById('minimalGameLink');
+        
+        if (loadingMsg) loadingMsg.style.display = 'none';
+        if (errorMsg) errorMsg.style.display = 'none';
+        if (minimalLink) minimalLink.style.display = 'none';
+        
+        console.log("Direct DOM manipulation to hide messages");
+    }
+    
     // Set canvas size based on device
     if (isMobileDevice) {
         // Use full window size for mobile
@@ -172,9 +189,15 @@ function setup() {
     
     console.log("Setup complete. Game initialized with canvas size:", canvasWidth, "x", canvasHeight);
     
-    // Hide loading message now that setup is complete
-    if (typeof window.hideLoadingMessages === 'function') {
+    // Set global variable to indicate setup is complete
+    if (typeof window !== 'undefined') {
+        window.gameSetupComplete = true;
+    }
+    
+    // Hide loading message now that setup is complete (again, to be sure)
+    if (typeof window !== 'undefined' && window.hideLoadingMessages) {
         window.hideLoadingMessages();
+        console.log("Final hideLoadingMessages called");
     }
 }
 
