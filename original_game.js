@@ -5,6 +5,7 @@
 // March 30, 2025 - Made play again option always available
 // March 31, 2025 - Added epic alien explosions and certificate design
 // April 1, 2025 - Added confetti celebration, floating score notifications, and improved bubble text
+// April 2, 2025 - Fixed score notifications when hitting correct API bubble
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -284,14 +285,14 @@ function drawHUD() {
     
     // Draw text shadow for better visibility
     fill(0, 0, 40);
-    textSize(23 * scaleRatio);
     textStyle(BOLD);
+    textSize(23 * scaleRatio);
     text(levels[currentLevel].question, canvasWidth/2 + 2 * scaleRatio, 45 * scaleRatio + 2 * scaleRatio);
     
     // Draw the actual question with larger text and better positioning
     fill(255, 255, 255);
-    textSize(23 * scaleRatio);
     textStyle(BOLD);
+    textSize(23 * scaleRatio);
     text(levels[currentLevel].question, canvasWidth/2, 45 * scaleRatio);
     
     // Score
@@ -319,6 +320,9 @@ function drawLevelCompletedScreen() {
     
     // Draw celebratory confetti
     updateAndDrawConfetti();
+    
+    // Draw score notifications so they're visible after hitting the correct API
+    updateAndDrawScoreNotifications();
     
     // Level completed message
     fill(255);
@@ -1678,7 +1682,7 @@ function createScoreNotification(x, y, text, color) {
         text: text,
         color: color,
         timeCreated: millis(),
-        lifespan: 1000 // Score notifications live 1 second
+        lifespan: 1500 // Increased lifespan from 1000 to 1500ms for better visibility
     });
 }
 
