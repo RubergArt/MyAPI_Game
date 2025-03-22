@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal HR API Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>API Space Game - Minimal Version</title>
+    <!-- Load p5.js library -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <!-- Load our minimal game script -->
+    <script src="minimal_game.js"></script>
     
     <style>
         html, body {
@@ -16,7 +19,7 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            touch-action: none; /* Prevent browser gestures on touch */
         }
         canvas {
             display: block;
@@ -25,206 +28,41 @@
             position: fixed;
             bottom: 20px;
             color: white;
+            font-family: Arial, sans-serif;
             text-align: center;
             width: 100%;
+            display: none; /* Hidden by default, shown with JavaScript */
         }
-        #status {
+        #mobileInstructions {
+            display: none; /* Hidden by default, shown with JavaScript */
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             color: white;
+            font-family: Arial, sans-serif;
             text-align: center;
             width: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="status">Minimal Version - GitHub Pages Test</div>
     <div id="instructions">
         Use ←/→ arrow keys to move and SPACE to shoot
     </div>
+    <div id="mobileInstructions">
+        Touch left/right sides to move, center to shoot
+    </div>
     
     <script>
-        // Minimal P5.js Game Code
-        let gameState = "splash"; // splash, playing, won, lost
-        let canvasWidth = 800;
-        let canvasHeight = 600;
-        let playerX;
-        let score = 0;
-        let targets = [];
-        
-        function setup() {
-            createCanvas(canvasWidth, canvasHeight);
-            textAlign(CENTER, CENTER);
-            playerX = width/2;
-            
-            // Create targets
-            resetTargets();
-            
-            // Log success
-            console.log("Game initialized successfully on: " + window.location.href);
-        }
-        
-        function resetTargets() {
-            targets = [];
-            for (let i = 0; i < 5; i++) {
-                targets.push({
-                    x: 100 + i * 150,
-                    y: 100,
-                    alive: true
-                });
-            }
-        }
-        
-        function draw() {
-            background(20);
-            
-            if (gameState === "splash") {
-                drawSplashScreen();
-            } else if (gameState === "playing") {
-                drawPlayingScreen();
-                updateGame();
-            } else if (gameState === "won") {
-                drawWonScreen();
-            }
-        }
-        
-        function drawSplashScreen() {
-            fill(255);
-            textSize(32);
-            text("HR API Game", width/2, height/3);
-            
-            textSize(18);
-            text("Press ENTER to start", width/2, height/2);
-            
-            // Draw stars for background effect
-            for (let i = 0; i < 50; i++) {
-                let x = random(width);
-                let y = random(height);
-                let size = random(1, 3);
-                fill(255, 255, 255, random(100, 255));
-                ellipse(x, y, size, size);
-            }
-        }
-        
-        function drawPlayingScreen() {
-            // Draw player
-            fill(0, 255, 0);
-            rect(playerX - 25, height - 50, 50, 30);
-            
-            // Draw targets
-            for (let i = 0; i < targets.length; i++) {
-                if (targets[i].alive) {
-                    fill(255, 0, 0);
-                    ellipse(targets[i].x, targets[i].y, 40, 40);
-                    fill(255);
-                    textSize(14);
-                    text("API", targets[i].x, targets[i].y);
-                }
+        // Show appropriate instructions based on device
+        window.onload = function() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                document.getElementById('mobileInstructions').style.display = 'block';
+            } else {
+                document.getElementById('instructions').style.display = 'block';
             }
             
-            // Draw score
-            fill(255);
-            textSize(18);
-            text("Score: " + score, 80, 30);
-        }
-        
-        function updateGame() {
-            // Check if all targets are gone
-            let allDead = true;
-            for (let target of targets) {
-                if (target.alive) {
-                    allDead = false;
-                    break;
-                }
-            }
-            
-            if (allDead) {
-                gameState = "won";
-            }
-        }
-        
-        function drawWonScreen() {
-            fill(0, 255, 0);
-            textSize(32);
-            text("You Won!", width/2, height/3);
-            
-            textSize(24);
-            text("Score: " + score, width/2, height/2.5);
-            
-            textSize(18);
-            text("Press ENTER to play again", width/2, height/2);
-            
-            // Draw confetti for celebration
-            for (let i = 0; i < 100; i++) {
-                let x = random(width);
-                let y = random(height);
-                let size = random(3, 8);
-                fill(random(100, 255), random(100, 255), random(100, 255));
-                rect(x, y, size, size);
-            }
-        }
-        
-        function keyPressed() {
-            console.log("Key pressed: " + keyCode);
-            
-            if (keyCode === ENTER) {
-                if (gameState === "splash") {
-                    gameState = "playing";
-                    score = 0;
-                    resetTargets();
-                } else if (gameState === "won") {
-                    gameState = "splash";
-                }
-            }
-            
-            // Player movement
-            if (gameState === "playing") {
-                if (keyCode === LEFT_ARROW) {
-                    playerX = max(25, playerX - 20);
-                } else if (keyCode === RIGHT_ARROW) {
-                    playerX = min(width - 25, playerX + 20);
-                } else if (keyCode === 32) { // SPACE to shoot
-                    shoot();
-                }
-            }
-            
-            // Secret win button for testing
-            if (keyCode === 87) { // 'W' key
-                gameState = "won";
-            }
-        }
-        
-        function shoot() {
-            // Simple shoot function - finds closest target above player
-            let closestTarget = null;
-            let minDistance = Infinity;
-            
-            for (let i = 0; i < targets.length; i++) {
-                if (targets[i].alive) {
-                    let xDist = abs(targets[i].x - playerX);
-                    if (xDist < minDistance) {
-                        minDistance = xDist;
-                        closestTarget = i;
-                    }
-                }
-            }
-            
-            if (closestTarget !== null && minDistance < 50) {
-                targets[closestTarget].alive = false;
-                score += 100;
-            }
-        }
-        
-        function mousePressed() {
-            // Click to start
-            if (gameState === "splash") {
-                gameState = "playing";
-                score = 0;
-                resetTargets();
-            } else if (gameState === "playing") {
-                shoot();
-            }
-        }
+            console.log("Game loader initialized");
+        };
     </script>
 </body>
 </html> 

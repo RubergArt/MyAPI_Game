@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR API Game</title>
-    <!-- Load only the main p5.js library, no sound -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>API Space Game</title>
+    <!-- Load p5.js library -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <!-- Load our sketch file -->
+    <script src="sketch.js"></script>
     
     <style>
         html, body {
@@ -17,6 +19,7 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            touch-action: none; /* Prevent browser gestures on touch */
         }
         canvas {
             display: block;
@@ -28,101 +31,90 @@
             font-family: Arial, sans-serif;
             text-align: center;
             width: 100%;
+            display: none; /* Hidden by default, shown with JavaScript */
+        }
+        #mobileInstructions {
+            display: none; /* Hidden by default, shown with JavaScript */
+            position: fixed;
+            bottom: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            width: 100%;
+        }
+        #loadingMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 18px;
+        }
+        #errorMessage {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff6666;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 16px;
+            max-width: 80%;
+            display: none;
+        }
+        #minimalGameLink {
+            position: fixed;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #66ccff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 16px;
+            text-decoration: underline;
+            cursor: pointer;
+            display: none;
         }
     </style>
 </head>
 <body>
+    <div id="loadingMessage">Loading game...</div>
+    <div id="errorMessage">There was a problem loading the game.</div>
+    <div id="minimalGameLink" onclick="window.location.href='minimal_game.html'">Play the minimal version instead</div>
+    
     <div id="instructions">
         Use ←/→ arrow keys to move and SPACE to shoot
     </div>
+    <div id="mobileInstructions">
+        Touch left/right sides to move, center to shoot
+    </div>
     
     <script>
-        // Minimal P5.js Game Code
-        let gameState = "splash"; // splash, playing, won, lost
-        let canvasWidth = 800;
-        let canvasHeight = 600;
-        
-        function setup() {
-            createCanvas(canvasWidth, canvasHeight);
-            textAlign(CENTER, CENTER);
-        }
-        
-        function draw() {
-            background(20);
-            
-            if (gameState === "splash") {
-                drawSplashScreen();
-            } else if (gameState === "playing") {
-                drawPlayingScreen();
-            } else if (gameState === "won") {
-                drawWonScreen();
-            }
-        }
-        
-        function drawSplashScreen() {
-            fill(255);
-            textSize(32);
-            text("HR API Game", width/2, height/3);
-            
-            textSize(18);
-            text("Press ENTER to start", width/2, height/2);
-            
-            // Draw stars for background effect
-            for (let i = 0; i < 50; i++) {
-                let x = random(width);
-                let y = random(height);
-                let size = random(1, 3);
-                fill(255, 255, 255, random(100, 255));
-                ellipse(x, y, size, size);
-            }
-        }
-        
-        function drawPlayingScreen() {
-            // Draw player
-            fill(0, 255, 0);
-            rect(width/2 - 25, height - 50, 50, 30);
-            
-            // Draw some "API" targets
-            fill(255, 0, 0);
-            for (let i = 0; i < 5; i++) {
-                ellipse(100 + i * 150, 100, 40, 40);
-                fill(255);
-                textSize(14);
-                text("API", 100 + i * 150, 100);
-                fill(255, 0, 0);
-            }
-        }
-        
-        function drawWonScreen() {
-            fill(0, 255, 0);
-            textSize(32);
-            text("You Won!", width/2, height/3);
-            
-            textSize(18);
-            text("Press ENTER to play again", width/2, height/2);
-        }
-        
-        function keyPressed() {
-            if (keyCode === ENTER) {
-                if (gameState === "splash") {
-                    gameState = "playing";
-                } else if (gameState === "won") {
-                    gameState = "splash";
-                }
+        // Show appropriate instructions based on device
+        window.onload = function() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                document.getElementById('mobileInstructions').style.display = 'block';
+            } else {
+                document.getElementById('instructions').style.display = 'block';
             }
             
-            // Secret win button for testing
-            if (keyCode === 87) { // 'W' key
-                gameState = "won";
-            }
-        }
+            console.log("Game loader initialized");
+        };
         
-        function mousePressed() {
-            // Click to start
-            if (gameState === "splash") {
-                gameState = "playing";
+        // Fallback timer - if game doesn't start within 5 seconds, show error and minimal game link
+        setTimeout(function() {
+            // Check if p5 canvas exists
+            if (document.getElementsByTagName('canvas').length === 0) {
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('minimalGameLink').style.display = 'block';
+                console.error("Game failed to load - no canvas detected after timeout");
+            } else {
+                document.getElementById('loadingMessage').style.display = 'none';
             }
-        }
+        }, 5000);
     </script>
 </body>
 </html>
