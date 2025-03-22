@@ -12,6 +12,7 @@
 // April 6, 2025 - Emergency fixes for iOS spaceship visibility and controls
 // April 7, 2025 - Cleaned up iOS debug elements while preserving visibility fixes
 // April 8, 2025 - Improved mobile controls with virtual joystick and enhanced shoot button
+// April 9, 2025 - Added tap-to-shoot on spaceship for mobile devices
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -404,8 +405,8 @@ function drawInstructionsScreen() {
     textSize(18 * scaleRatio);
     fill(150, 255, 150);
     if (isMobileDevice) {
-        text("Touch the left/right sides to move", canvasWidth/2, instructionsY + lineHeight * 4);
-        text("Touch the center to shoot", canvasWidth/2, instructionsY + lineHeight * 5);
+        text("Use the left joystick to move", canvasWidth/2, instructionsY + lineHeight * 4);
+        text("Tap your spaceship or the FIRE button to shoot", canvasWidth/2, instructionsY + lineHeight * 5);
     } else {
         text("Use LEFT/RIGHT arrows to move", canvasWidth/2, instructionsY + lineHeight * 4);
         text("Press SPACE to shoot", canvasWidth/2, instructionsY + lineHeight * 5);
@@ -1497,6 +1498,17 @@ function checkTouchZones() {
     for (let i = 0; i < touches.length; i++) {
         let touch = touches[i];
         
+        // Check for spaceship tap (new feature)
+        let distToSpaceship = dist(touch.x, touch.y, spaceship.x, spaceship.y);
+        if (distToSpaceship < spaceship.width * 0.6) {
+            // Tap on spaceship detected - shoot!
+            if (bulletCooldown === 0 && gameState === "playing") {
+                shoot();
+                // Create a small visual feedback effect
+                createTapFeedback(spaceship.x, spaceship.y);
+            }
+        }
+        
         // Check for joystick control
         let distToJoystick = dist(touch.x, touch.y, joystickBaseX, joystickBaseY);
         
@@ -2116,6 +2128,24 @@ function updateAndDrawScoreNotifications() {
             continue;
         }
         
+        // Special handling for ring effect from spaceship tap
+        if (notification.isRingEffect) {
+            // Draw expanding ring
+            let progress = timePassed / notification.lifespan;
+            let size = map(progress, 0, 1, 10, spaceship.width * 2) * scaleRatio;
+            let alpha = map(progress, 0, 1, 200, 0);
+            
+            push();
+            noFill();
+            stroke(notification.color[0], notification.color[1], notification.color[2], alpha);
+            strokeWeight(3 * scaleRatio * (1 - progress));
+            ellipse(notification.x, notification.y, size, size);
+            pop();
+            
+            continue;
+        }
+        
+        // Normal score notification handling
         // Move notification upward
         notification.y -= 1 * scaleRatio;
         
@@ -2181,4 +2211,38 @@ function touchEnded() {
         joystickThumbY = joystickBaseY;
     }
     return false;
+}
+
+// New function to create visual feedback when tapping spaceship
+function createTapFeedback(x, y) {
+    // Create a simple ring effect that expands and fades
+    for (let i = 0; i < 1; i++) {
+        let ringEffect = {
+            x: x,
+            y: y,
+            startTime: millis(),
+            lifespan: 500
+        };
+        
+        // Add to score notifications array since it has similar behavior
+        // We'll just use it for rendering
+        scoreNotifications.push({
+            x: x,
+            y: y,
+            text: "", // No text, just visual
+            color: [100, 255, 255],
+            timeCreated: millis(),
+            lifespan: 500,
+            isRingEffect: true
+        });
+    }
+    
+    // Add haptic feedback
+    if ('vibrate' in navigator) {
+        try {
+            navigator.vibrate(10); // Short vibration
+        } catch (e) {
+            console.log("Vibration not supported");
+        }
+    }
 } 
