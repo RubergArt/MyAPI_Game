@@ -14,6 +14,7 @@
 // April 8, 2025 - Improved mobile controls with virtual joystick and enhanced shoot button
 // April 9, 2025 - Added tap-to-shoot on spaceship for mobile devices
 // April 10, 2025 - Simplified mobile controls with left/right touch areas and spaceship tap-to-shoot
+// April 11, 2025 - Improved API bubble text readability on mobile devices
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -1174,49 +1175,71 @@ function updateAndDrawAsteroids() {
 function drawAPIBubble(x, y, width, height, type, state) {
     push();
     if (state === "normal") {
-        // Normal API bubble - blue
-        fill(20, 120, 255, 200);
-        stroke(100, 180, 255);
+        // Normal API bubble - blue with stronger contrast for mobile
+        fill(20, 120, 255, isMobileDevice ? 230 : 200);
+        stroke(100, 220, 255);
     } else if (state === "correct") {
         // Correct API - green
-        fill(0, 255, 100, 200);
+        fill(0, 255, 100, isMobileDevice ? 230 : 200);
         stroke(100, 255, 180);
     } else if (state === "incorrect") {
         // Incorrect API - red
-        fill(255, 50, 50, 200);
+        fill(255, 50, 50, isMobileDevice ? 230 : 200);
         stroke(255, 150, 150);
     }
     
-    // Thicker stroke and larger bubble
-    strokeWeight(3 * scaleRatio);
+    // Thicker stroke for better visibility, especially on mobile
+    strokeWeight((isMobileDevice ? 4 : 3) * scaleRatio);
     ellipse(x, y, width, height);
     
-    // Background for text to improve readability
+    // Improved background for text readability
     if (state === "normal") {
-        fill(10, 60, 120, 180);
+        fill(10, 60, 120, isMobileDevice ? 220 : 180);
     } else if (state === "correct") {
-        fill(0, 120, 50, 180);
+        fill(0, 120, 50, isMobileDevice ? 220 : 180);
     } else if (state === "incorrect") {
-        fill(120, 30, 30, 180);
+        fill(120, 30, 30, isMobileDevice ? 220 : 180);
     }
     
-    ellipse(x, y, width * 0.8, height * 0.5);
+    // Create a more distinct background area for the text
+    if (isMobileDevice) {
+        // More pronounced background area on mobile
+        ellipse(x, y, width * 0.85, height * 0.6);
+    } else {
+        // Regular background on desktop
+        ellipse(x, y, width * 0.8, height * 0.5);
+    }
     
-    // Calculate text size based on API name length to ensure it fits
-    let baseTextSize = 13 * scaleRatio; // Reduced base font size
+    // Calculate text size based on device and API name length
+    // Increase text size for mobile devices
+    let baseTextSize = isMobileDevice ? 18 * scaleRatio : 13 * scaleRatio;
     let textSizeFactor = map(constrain(type.length, 5, 15), 5, 15, 1.0, 0.7);
     let finalTextSize = baseTextSize * textSizeFactor;
     
-    // API text with drop shadow for better visibility
+    // Enhanced text rendering with stronger shadow for better readability
     // Shadow
-    fill(0, 0, 0, 150);
+    fill(0, 0, 0, 180);
     textAlign(CENTER, CENTER);
     textStyle(BOLD);
     textSize(finalTextSize);
-    text(type, x + 1.5 * scaleRatio, y + 1.5 * scaleRatio);
     
-    // Text
-    fill(255);
+    // More pronounced shadow on mobile
+    if (isMobileDevice) {
+        // Multiple shadow effect for stronger contrast
+        text(type, x + 2.5 * scaleRatio, y + 2.5 * scaleRatio);
+    } else {
+        text(type, x + 1.5 * scaleRatio, y + 1.5 * scaleRatio);
+    }
+    
+    // Text with better visibility
+    fill(255, 255, 255, 255); // Full opacity for text
+    
+    // Add stroke to text for better contrast on mobile
+    if (isMobileDevice) {
+        stroke(0, 0, 0, 150);
+        strokeWeight(1 * scaleRatio);
+    }
+    
     text(type, x, y);
     pop();
 }
@@ -1425,12 +1448,14 @@ function spawnAPI() {
         type = random(otherAPIs);
     }
     
-    // Create the API object
+    // Create the API object - make bubbles slightly larger on mobile
+    let bubbleSize = isMobileDevice ? 120 * scaleRatio : 100 * scaleRatio;
+    
     let api = {
         x: random(50, canvasWidth - 50),
         y: -50,
-        width: 100 * scaleRatio,
-        height: 100 * scaleRatio,
+        width: bubbleSize,
+        height: bubbleSize,
         type: type,
         state: "normal",
         speed: random(1, 3) * scaleRatio
