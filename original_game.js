@@ -114,6 +114,9 @@ function setup() {
     if (document.getElementById('message')) {
         document.getElementById('message').style.display = 'none';
     }
+    
+    // Initialize nameInputSelected to false
+    nameInputSelected = false;
 }
 
 function draw() {
@@ -246,6 +249,7 @@ function drawNameInputScreen() {
     // Title
     fill(50, 150, 255);
     textSize(40 * scaleRatio);
+    textAlign(CENTER, CENTER);
     text("Enter Your Name", canvasWidth/2, canvasHeight/3);
     
     // Name input field
@@ -273,10 +277,10 @@ function drawNameInputScreen() {
         
         // Blinking cursor for selected input
         if (nameInputSelected && frameCount % 60 < 30) {
-            let textWidth = textWidth(playerNameInput);
+            let txtWidth = textWidth(playerNameInput);
             stroke(255);
             strokeWeight(2 * scaleRatio);
-            let xPos = canvasWidth/2 + textWidth/2 + 5 * scaleRatio;
+            let xPos = canvasWidth/2 + txtWidth/2 + 5 * scaleRatio;
             line(xPos, canvasHeight/2 - 15 * scaleRatio, xPos, canvasHeight/2 + 15 * scaleRatio);
         }
     }
@@ -291,12 +295,14 @@ function drawNameInputScreen() {
     noStroke();
     textSize(20 * scaleRatio);
     textStyle(BOLD);
+    textAlign(CENTER, CENTER);
     text("CONTINUE", canvasWidth/2, canvasHeight/2 + 80 * scaleRatio);
     
     // Note about personalization
     fill(200, 200, 255);
     textSize(16 * scaleRatio);
     textStyle(NORMAL);
+    textAlign(CENTER, CENTER);
     text("Your name will appear on your certificate", canvasWidth/2, canvasHeight/2 + 150 * scaleRatio);
     text("(or leave blank to stay anonymous)", canvasWidth/2, canvasHeight/2 + 180 * scaleRatio);
 }
@@ -753,6 +759,7 @@ function keyPressed() {
     if (keyCode === 32) { // SPACE
         if (gameState === "splash") {
             gameState = "nameInput";
+            nameInputSelected = false; // Reset input selection
         } else if (gameState === "nameInput") {
             if (nameInputSelected) {
                 // Add space to name
@@ -761,6 +768,7 @@ function keyPressed() {
                 // Continue to instructions
                 playerName = playerNameInput.trim();
                 gameState = "instructions";
+                nameInputSelected = false; // Reset input selection
             }
         } else if (gameState === "instructions") {
             gameState = "playing";
@@ -799,6 +807,7 @@ function keyPressed() {
             // Handle enter/return key
             playerName = playerNameInput.trim();
             gameState = "instructions";
+            nameInputSelected = false; // Reset input selection
             return false;
         } else if (keyCode >= 32 && keyCode <= 126) {
             // Standard ASCII characters (letters, numbers, punctuation)
@@ -1397,6 +1406,7 @@ function checkTouchZones() {
 function touchStarted() {
     if (gameState === "splash") {
         gameState = "nameInput";
+        nameInputSelected = false; // Reset input selection
         return false;
     } else if (gameState === "nameInput") {
         // Check if tapped on name input
@@ -1431,6 +1441,7 @@ function touchStarted() {
             // Continue to instructions
             playerName = playerNameInput.trim();
             gameState = "instructions";
+            nameInputSelected = false; // Reset input selection
             return false;
         }
         
