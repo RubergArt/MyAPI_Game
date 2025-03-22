@@ -4,22 +4,22 @@
 // Define the HR use cases and correct APIs for each level
 const levels = [
     { 
-        question: "Which API would you use to onboard a new worker to your payroll app?", 
+        question: "Which API would hire a Worker,", 
         correctAPI: "Hire API", 
         explanation: "The Hire API handles all aspects of adding new workers to your payroll system with proper data validation."
     },
     { 
-        question: "Which API would you implement for a compensation update?", 
-        correctAPI: "Rate change API", 
-        explanation: "The Rate change API ensures accurate and compliant updates to worker compensation data."
+        question: "Which API would increase a Workers Rate,", 
+        correctAPI: "Remuneration API", 
+        explanation: "The Remuneration API ensures accurate and compliant updates to worker compensation data."
     },
     { 
-        question: "Which API would you select to process an internal promotion?", 
-        correctAPI: "Job change API", 
-        explanation: "The Job change API manages role transitions with proper validation and historical tracking."
+        question: "Which API would change promoted workers job title.", 
+        correctAPI: "Job Change API", 
+        explanation: "The Job Change API manages role transitions with proper validation and historical tracking."
     },
     { 
-        question: "Which API would you implement for a worker who leaves your employment?", 
+        question: "Which API would confirm the worker is leaving employment", 
         correctAPI: "Terminate API", 
         explanation: "The Terminate API handles workers leaving process with proper validation and compliance checks."
     }
@@ -28,8 +28,8 @@ const levels = [
 // All possible API options
 const allAPIs = [
     "Hire API",
-    "Rate change API", 
-    "Job change API", 
+    "Remuneration API", 
+    "Job Change API", 
     "Pay Data API", 
     "Terminate API",
     "Address change API"
@@ -268,20 +268,31 @@ function drawInstructionsScreen() {
 }
 
 function drawHUD() {
-    // Current level question at top - ENHANCED for better visibility with larger size
-    fill(20, 60, 120, 220);  // Darker blue with higher opacity
-    stroke(100, 150, 255);   // Light blue border
-    strokeWeight(3 * scaleRatio);
-    rect(canvasWidth/2, 50 * scaleRatio, canvasWidth * 0.9, 80 * scaleRatio, 10 * scaleRatio);
+    // Current level question at top - ENHANCED for better visibility with larger size and attention-grabbing design
+    fill(0, 30, 80, 240);  // Darker blue with higher opacity
+    stroke(100, 180, 255);   // Light blue border
+    strokeWeight(4 * scaleRatio);
+    rect(canvasWidth/2, 45 * scaleRatio, canvasWidth * 0.95, 70 * scaleRatio, 12 * scaleRatio);
     
-    // Make the label and question more prominent
+    // Add a highlight effect at the top of the question box
+    noStroke();
+    fill(100, 150, 255, 100);
+    rect(canvasWidth/2, 20 * scaleRatio, canvasWidth * 0.9, 10 * scaleRatio, 5 * scaleRatio);
+    
+    // Make the use case question the absolute focus with high-visibility formatting
     textAlign(CENTER, CENTER);
     
-    // Draw the actual question with larger text and better positioning
-    fill(255);
-    textSize(22 * scaleRatio);
+    // Draw text shadow for better visibility
+    fill(0, 0, 40);
+    textSize(23 * scaleRatio);
     textStyle(BOLD);
-    text(levels[currentLevel].question, canvasWidth/2, 50 * scaleRatio);
+    text(levels[currentLevel].question, canvasWidth/2 + 2 * scaleRatio, 45 * scaleRatio + 2 * scaleRatio);
+    
+    // Draw the actual question with larger text and better positioning
+    fill(255, 255, 255);
+    textSize(23 * scaleRatio);
+    textStyle(BOLD);
+    text(levels[currentLevel].question, canvasWidth/2, 45 * scaleRatio);
     
     // Score
     fill(0, 0, 0, 150);
@@ -653,14 +664,31 @@ function drawAPIBubble(x, y, width, height, type, state) {
         stroke(255, 150, 150);
     }
     
-    strokeWeight(2 * scaleRatio);
+    // Thicker stroke and larger bubble
+    strokeWeight(3 * scaleRatio);
     ellipse(x, y, width, height);
     
-    // API text
-    fill(255);
-    noStroke();
+    // Background for text to improve readability
+    if (state === "normal") {
+        fill(10, 60, 120, 180);
+    } else if (state === "correct") {
+        fill(0, 120, 50, 180);
+    } else if (state === "incorrect") {
+        fill(120, 30, 30, 180);
+    }
+    
+    ellipse(x, y, width * 0.8, height * 0.5);
+    
+    // API text with drop shadow for better visibility
+    // Shadow
+    fill(0, 0, 0, 150);
     textAlign(CENTER, CENTER);
-    textSize(14 * scaleRatio);
+    textStyle(BOLD);
+    textSize(16 * scaleRatio);
+    text(type, x + 1.5 * scaleRatio, y + 1.5 * scaleRatio);
+    
+    // Text
+    fill(255);
     text(type, x, y);
     pop();
 }
