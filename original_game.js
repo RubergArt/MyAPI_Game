@@ -6,6 +6,7 @@
 // March 31, 2025 - Added epic alien explosions and certificate design
 // April 1, 2025 - Added confetti celebration, floating score notifications, and improved bubble text
 // April 2, 2025 - Fixed score notifications when hitting correct API bubble
+// April 3, 2025 - Added personalized certificates and LinkedIn sharing
 
 // Define the HR use cases and correct APIs for each level
 const levels = [
@@ -42,12 +43,14 @@ const allAPIs = [
 ];
 
 // Game states and variables
-let gameState = "splash"; // splash, instructions, playing, levelCompleted, gameOver, won
+let gameState = "splash"; // splash, nameInput, instructions, playing, levelCompleted, gameOver, won
 let currentLevel = 0;
 let canvasWidth, canvasHeight;
 let scaleRatio = 1;
 let score = 0;
 let playerName = "";
+let playerNameInput = "";
+let nameInputSelected = false;
 let levelExplanationStartTime = 0;
 let gameOverStartTime = 0;
 let winStartTime = 0;
@@ -123,6 +126,10 @@ function draw() {
     switch(gameState) {
         case "splash":
             drawSplashScreen();
+            break;
+            
+        case "nameInput":
+            drawNameInputScreen();
             break;
             
         case "instructions":
@@ -233,6 +240,65 @@ function drawSplashScreen() {
     // Credits
     textSize(14 * scaleRatio);
     text("Created for ADP Marketplace", canvasWidth/2, canvasHeight - 60 * scaleRatio);
+}
+
+function drawNameInputScreen() {
+    // Title
+    fill(50, 150, 255);
+    textSize(40 * scaleRatio);
+    text("Enter Your Name", canvasWidth/2, canvasHeight/3);
+    
+    // Name input field
+    // Background for input field
+    fill(0, 30, 80);
+    stroke(100, 180, 255);
+    strokeWeight(3 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight/2, canvasWidth * 0.5, 50 * scaleRatio, 8 * scaleRatio);
+    
+    // Text inside input field
+    if (playerNameInput === "" && !nameInputSelected) {
+        fill(150);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        textSize(20 * scaleRatio);
+        textStyle(ITALIC);
+        text("Your Name", canvasWidth/2, canvasHeight/2);
+    } else {
+        fill(255);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        textSize(20 * scaleRatio);
+        textStyle(NORMAL);
+        text(playerNameInput, canvasWidth/2, canvasHeight/2);
+        
+        // Blinking cursor for selected input
+        if (nameInputSelected && frameCount % 60 < 30) {
+            let textWidth = textWidth(playerNameInput);
+            stroke(255);
+            strokeWeight(2 * scaleRatio);
+            let xPos = canvasWidth/2 + textWidth/2 + 5 * scaleRatio;
+            line(xPos, canvasHeight/2 - 15 * scaleRatio, xPos, canvasHeight/2 + 15 * scaleRatio);
+        }
+    }
+    
+    // Continue button
+    fill(50, 150, 255);
+    stroke(30, 100, 200);
+    strokeWeight(2 * scaleRatio);
+    rect(canvasWidth/2, canvasHeight/2 + 80 * scaleRatio, 200 * scaleRatio, 50 * scaleRatio, 8 * scaleRatio);
+    
+    fill(255);
+    noStroke();
+    textSize(20 * scaleRatio);
+    textStyle(BOLD);
+    text("CONTINUE", canvasWidth/2, canvasHeight/2 + 80 * scaleRatio);
+    
+    // Note about personalization
+    fill(200, 200, 255);
+    textSize(16 * scaleRatio);
+    textStyle(NORMAL);
+    text("Your name will appear on your certificate", canvasWidth/2, canvasHeight/2 + 150 * scaleRatio);
+    text("(or leave blank to stay anonymous)", canvasWidth/2, canvasHeight/2 + 180 * scaleRatio);
 }
 
 function drawInstructionsScreen() {
@@ -396,43 +462,66 @@ function drawWinScreen() {
     strokeWeight(2 * scaleRatio);
     line(canvasWidth * 0.25, canvasHeight * 0.26, canvasWidth * 0.75, canvasHeight * 0.26);
     
-    // Main text - updated wording
+    // Main text - updated with player name if provided
     noStroke();
     fill(40, 40, 80);
     textSize(18 * scaleRatio);
     textStyle(NORMAL);
-    text("This certifies that you are an", canvasWidth/2, canvasHeight * 0.32);
     
-    // Player designation
-    textStyle(ITALIC);
-    textSize(24 * scaleRatio);
-    text("API Champion", canvasWidth/2, canvasHeight * 0.38);
+    if (playerName.trim() !== "") {
+        text("This certifies that", canvasWidth/2, canvasHeight * 0.32);
+        
+        // Player name in larger, more prominent text
+        textStyle(BOLD);
+        textSize(26 * scaleRatio);
+        text(playerName, canvasWidth/2, canvasHeight * 0.38);
+        
+        // Rest of certificate text
+        textStyle(NORMAL);
+        textSize(18 * scaleRatio);
+        text("is an", canvasWidth/2, canvasHeight * 0.44);
+        
+        // API Champion text
+        textStyle(ITALIC);
+        textSize(24 * scaleRatio);
+        text("API Champion", canvasWidth/2, canvasHeight * 0.5);
+    } else {
+        text("This certifies that you are an", canvasWidth/2, canvasHeight * 0.32);
+        
+        // Player designation
+        textStyle(ITALIC);
+        textSize(24 * scaleRatio);
+        text("API Champion", canvasWidth/2, canvasHeight * 0.38);
+    }
     
     // Description
     textStyle(NORMAL);
     textSize(16 * scaleRatio);
-    text("has successfully demonstrated exceptional understanding of", canvasWidth/2, canvasHeight * 0.45);
+    text("has successfully demonstrated exceptional understanding of", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.56 : canvasHeight * 0.45);
     
     // What they learned
     textStyle(BOLD);
     textSize(20 * scaleRatio);
-    text("ADP Marketplace APIs", canvasWidth/2, canvasHeight * 0.51);
+    text("ADP Marketplace APIs", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.62 : canvasHeight * 0.51);
     
     // Score
     textStyle(NORMAL);
     textSize(16 * scaleRatio);
-    text("with a score of", canvasWidth/2, canvasHeight * 0.58);
+    text("with a score of", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.68 : canvasHeight * 0.58);
     
     textStyle(BOLD);
     textSize(28 * scaleRatio);
     fill(20, 150, 20);
-    text(score + " points", canvasWidth/2, canvasHeight * 0.65);
+    text(score + " points", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.74 : canvasHeight * 0.65);
     
     // Email collection form - moved down to provide more space from the seal
     drawEmailForm();
     
     // Play again option
     drawPlayAgainButton();
+    
+    // LinkedIn sharing button
+    drawLinkedInShareButton();
 }
 
 function drawCertificateBorder() {
@@ -640,11 +729,39 @@ function drawPlayAgainButton() {
     text("PLAY AGAIN", canvasWidth * 0.85, canvasHeight * 0.95);
 }
 
+function drawLinkedInShareButton() {
+    // If email is being submitted, don't show this button
+    if (emailSubmitting) return;
+    
+    // LinkedIn button at top right corner
+    fill(10, 102, 194); // LinkedIn blue
+    stroke(8, 82, 156); // Darker blue
+    strokeWeight(2 * scaleRatio);
+    rect(canvasWidth * 0.85, canvasHeight * 0.85, 180 * scaleRatio, 40 * scaleRatio, 5 * scaleRatio);
+    
+    // Button text
+    fill(255);
+    noStroke();
+    textSize(16 * scaleRatio);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    text("SHARE ON LINKEDIN", canvasWidth * 0.85, canvasHeight * 0.85);
+}
+
 function keyPressed() {
     // Space key functions
     if (keyCode === 32) { // SPACE
         if (gameState === "splash") {
-            gameState = "instructions";
+            gameState = "nameInput";
+        } else if (gameState === "nameInput") {
+            if (nameInputSelected) {
+                // Add space to name
+                playerNameInput += " ";
+            } else {
+                // Continue to instructions
+                playerName = playerNameInput.trim();
+                gameState = "instructions";
+            }
         } else if (gameState === "instructions") {
             gameState = "playing";
         } else if (gameState === "playing") {
@@ -669,6 +786,27 @@ function keyPressed() {
             // Start a new game after winning and submitting email
             resetGame();
             gameState = "splash";
+        }
+    }
+    
+    // Name input handling
+    if (gameState === "nameInput" && nameInputSelected) {
+        if (keyCode === BACKSPACE) {
+            // Handle backspace
+            playerNameInput = playerNameInput.slice(0, -1);
+            return false; // Prevent browser back
+        } else if (keyCode === ENTER || keyCode === RETURN) {
+            // Handle enter/return key
+            playerName = playerNameInput.trim();
+            gameState = "instructions";
+            return false;
+        } else if (keyCode >= 32 && keyCode <= 126) {
+            // Standard ASCII characters (letters, numbers, punctuation)
+            // Limit name length to 20 characters
+            if (playerNameInput.length < 20) {
+                playerNameInput += key;
+            }
+            return false;
         }
     }
     
@@ -1258,8 +1396,47 @@ function checkTouchZones() {
 
 function touchStarted() {
     if (gameState === "splash") {
-        gameState = "instructions";
+        gameState = "nameInput";
         return false;
+    } else if (gameState === "nameInput") {
+        // Check if tapped on name input
+        let inputFieldX = canvasWidth/2;
+        let inputFieldY = canvasHeight/2;
+        let inputFieldW = canvasWidth * 0.5;
+        let inputFieldH = 50 * scaleRatio;
+        
+        if (mouseX > inputFieldX - inputFieldW/2 && mouseX < inputFieldX + inputFieldW/2 && 
+            mouseY > inputFieldY - inputFieldH/2 && mouseY < inputFieldY + inputFieldH/2) {
+            
+            // Select name input field
+            nameInputSelected = true;
+            
+            // Show keyboard for name input on mobile
+            if (isMobileDevice) {
+                showVirtualKeyboardForName();
+            }
+            
+            return false;
+        }
+        
+        // Check if tapped on continue button
+        let continueX = canvasWidth/2;
+        let continueY = canvasHeight/2 + 80 * scaleRatio;
+        let continueW = 200 * scaleRatio;
+        let continueH = 50 * scaleRatio;
+        
+        if (mouseX > continueX - continueW/2 && mouseX < continueX + continueW/2 && 
+            mouseY > continueY - continueH/2 && mouseY < continueY + continueH/2) {
+            
+            // Continue to instructions
+            playerName = playerNameInput.trim();
+            gameState = "instructions";
+            return false;
+        }
+        
+        // Deselect name input if clicked elsewhere
+        nameInputSelected = false;
+        
     } else if (gameState === "instructions") {
         gameState = "playing";
         return false;
@@ -1289,8 +1466,8 @@ function touchStarted() {
     } else if (gameState === "won") {
         // Check if tapped on email input
         let emailFieldX = canvasWidth/2;
-        let emailFieldY = canvasHeight * 0.78;
-        let emailFieldW = canvasWidth * 0.6;
+        let emailFieldY = canvasHeight * 0.91;
+        let emailFieldW = canvasWidth * 0.5;
         let emailFieldH = 40 * scaleRatio;
         
         if (mouseX > emailFieldX - emailFieldW/2 && mouseX < emailFieldX + emailFieldW/2 && 
@@ -1303,8 +1480,8 @@ function touchStarted() {
         
         // Check if tapped on submit button
         let submitX = canvasWidth/2;
-        let submitY = canvasHeight * 0.85;
-        let submitW = 180 * scaleRatio;
+        let submitY = canvasHeight * 0.95;
+        let submitW = 160 * scaleRatio;
         let submitH = 40 * scaleRatio;
         
         if (mouseX > submitX - submitW/2 && mouseX < submitX + submitW/2 && 
@@ -1314,7 +1491,7 @@ function touchStarted() {
             }
         }
         
-        // Check if tapped on play again button (now positioned at the bottom right)
+        // Check if tapped on play again button
         let playAgainX = canvasWidth * 0.85;
         let playAgainY = canvasHeight * 0.95;
         let playAgainW = 180 * scaleRatio;
@@ -1326,6 +1503,17 @@ function touchStarted() {
                 resetGame();
                 gameState = "splash";
             }
+        }
+        
+        // Check if tapped on LinkedIn share button
+        let linkedInX = canvasWidth * 0.85;
+        let linkedInY = canvasHeight * 0.85;
+        let linkedInW = 180 * scaleRatio;
+        let linkedInH = 40 * scaleRatio;
+        
+        if (mouseX > linkedInX - linkedInW/2 && mouseX < linkedInX + linkedInW/2 && 
+            mouseY > linkedInY - linkedInH/2 && mouseY < linkedInY + linkedInH/2) {
+            shareOnLinkedIn();
         }
     }
     
@@ -1369,6 +1557,13 @@ function resetGame() {
     
     // Reset flags
     canRestart = false;
+    emailInput = "";
+    emailSubmitted = false;
+    emailSubmitting = false;
+    emailError = "";
+    
+    // Keep player name across game sessions
+    // playerName remains unchanged to keep personalization
     
     console.log("Game reset complete, starting at level 1");
 }
@@ -1716,4 +1911,30 @@ function updateAndDrawScoreNotifications() {
         text(notification.text, notification.x, notification.y);
         pop();
     }
+}
+
+// Function to show virtual keyboard for name input on mobile
+function showVirtualKeyboardForName() {
+    if (!isMobileDevice) return; // Only needed on mobile
+    
+    // Use browser's prompt for name input
+    let name = prompt("Enter your name:");
+    if (name !== null) {
+        playerNameInput = name.substring(0, 20); // Limit to 20 characters
+    }
+}
+
+// Function to share certificate on LinkedIn
+function shareOnLinkedIn() {
+    // Create share text based on player name and score
+    let nameText = playerName.trim() !== "" ? playerName : "I";
+    let shareText = encodeURIComponent(`${nameText} just earned an API Champion certificate with a score of ${score} points in the ADP API Game! Think you can beat this score? Try the game and test your API knowledge!`);
+    
+    // LinkedIn sharing URL
+    let shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&title=${shareText}`;
+    
+    // Open LinkedIn share dialog in a new window
+    window.open(shareUrl, '_blank', 'width=600,height=600');
+    
+    console.log("Sharing on LinkedIn:", shareUrl);
 } 
