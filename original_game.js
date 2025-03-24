@@ -15,6 +15,7 @@
 // April 9, 2025 - Added tap-to-shoot on spaceship for mobile devices
 // April 10, 2025 - Simplified mobile controls with left/right touch areas and spaceship tap-to-shoot
 // April 11, 2025 - Improved API bubble text readability on mobile devices
+// April 12, 2025 - Removed "ADP" branding from title and certificate page
 
 // Supabase client configuration
 const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
@@ -312,7 +313,7 @@ function drawSplashScreen() {
     // Title
     fill(50, 150, 255);
     textSize(40 * scaleRatio);
-    text("ADP API Game", canvasWidth/2, canvasHeight/3);
+    text("API Game", canvasWidth/2, canvasHeight/3);
     
     // Instruction
     fill(255);
@@ -321,7 +322,7 @@ function drawSplashScreen() {
     
     // Credits
     textSize(14 * scaleRatio);
-    text("Created for ADP Marketplace", canvasWidth/2, canvasHeight - 60 * scaleRatio);
+    text("Created for Marketplace", canvasWidth/2, canvasHeight - 60 * scaleRatio);
 }
 
 function drawNameInputScreen() {
@@ -600,7 +601,7 @@ function drawWinScreen() {
     // What they learned
     textStyle(BOLD);
     textSize(20 * scaleRatio);
-    text("ADP Marketplace APIs", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.68 : canvasHeight * 0.56);
+    text("Marketplace APIs", canvasWidth/2, playerName.trim() !== "" ? canvasHeight * 0.68 : canvasHeight * 0.56);
     
     // Email collection form - moved down to provide more space from the seal
     drawEmailForm();
@@ -684,7 +685,7 @@ function drawCertificateSeal(x, y, size) {
     textStyle(BOLD);
     textSize(size * 0.6);
     fill(90, 50, 20);
-    text("ADP", 0, -size * 0.1);
+    text("API", 0, -size * 0.1);
     
     textSize(size * 0.35);
     text("MARKETPLACE", 0, size * 0.3);
@@ -736,7 +737,7 @@ function drawEmailForm() {
     textStyle(NORMAL);
     
     // Condensed text to a single line and positioned clearly above the email input
-    text("Enter your email to learn more about ADP's Marketplace APIs:", canvasWidth/2, canvasHeight * 0.83);
+    text("Enter your email to learn more about Marketplace APIs:", canvasWidth/2, canvasHeight * 0.83);
     
     // Email input box - moved down slightly to ensure separation from text
     fill(255);
